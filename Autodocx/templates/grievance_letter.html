@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Grievance Letter Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Georgia&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4527A0;
+            --secondary-color: #333;
+            --background-color: #f0f2f5;
+            --editor-bg: #ffffff;
+            --preview-bg: #fafafa;
+            --border-color: #d9d9d9;
+        }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: var(--background-color); }
+        .overleaf-container { display: flex; height: 100vh; }
+        .editor-pane, .preview-pane { height: 100%; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+        .editor-pane { flex: 1; background-color: var(--editor-bg); border-right: 1px solid var(--border-color); }
+        .preview-pane { flex: 1.2; background-color: var(--preview-bg); }
+        .preview-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+        #grievanceForm { max-width: 600px; margin: auto; }
+        #grievanceForm h1 { color: var(--primary-color); text-align: center; }
+        #grievanceForm fieldset { border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 25px; }
+        #grievanceForm legend { font-size: 1.3em; font-weight: 600; color: var(--primary-color); padding: 0 10px; }
+        input[type="text"], input[type="date"], select, textarea { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 5px; box-sizing: border-box; font-family: inherit; font-size: 1rem; }
+        .ai-button, .download-button { padding: 10px 18px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; font-size: 1em; }
+        .ai-button { background-color: #ffc107; color: #333; display: block; width: 100%; margin-top: 10px; }
+        .download-button { background-color: #28a745; color: white; }
+        .theme-switch-wrapper { display: flex; align-items: center; gap: 10px; }
+        .theme-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .theme-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 26px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary-color); }
+        input:checked + .slider:before { transform: translateX(24px); }
+        .loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .loader { border: 5px solid #f3f3f3; border-top: 5px solid var(--primary-color); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        #grievance-output-container {
+            max-width: 8.5in; min-height: 11in; margin: 0 auto; background: white;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1); padding: 1in; box-sizing: border-box;
+            font-family: 'Georgia', 'Times New Roman', Times, serif; color: #333; font-size: 12pt; line-height: 1.6;
+            transition: all 0.3s ease;
+        }
+        .grv-sender-info { margin-bottom: 25px; line-height: 1.4; }
+        .grv-date { margin-bottom: 20px; }
+        .grv-recipient-info { margin-bottom: 20px; line-height: 1.4; }
+        .grv-subject { font-weight: bold; margin-bottom: 20px; }
+        .grv-body { text-align: justify; }
+        .grv-body p { margin-bottom: 1.2em; }
+        .grv-closing { margin-top: 30px; }
+
+        #grievance-output-container.modern-theme { font-family: 'Lato', -apple-system, sans-serif; }
+        .modern-theme .grv-sender-info { border-left: 4px solid var(--primary-color); padding-left: 15px; }
+        .modern-theme .grv-subject { color: var(--primary-color); font-size: 1.1em; }
+        .modern-theme .grv-body p { text-align: left; }
+    </style>
+</head>
+<body>
+    <div class="overleaf-container">
+        <div class="editor-pane">
+            <form id="grievanceForm">
+                <h1>Grievance Letter Generator</h1>
+                <fieldset>
+                    <legend>1. Your Details</legend>
+                    <input type="text" id="senderName" placeholder="Your Full Name">
+                    <input type="text" id="senderAddress" placeholder="Your Address">
+                    <input type="text" id="senderContact" placeholder="Phone/Email Contact">
+                </fieldset>
+                <fieldset>
+                    <legend>2. Recipient Details</legend>
+                    <input type="text" id="recipientName" placeholder="Recipient Name (Officer/Authority)">
+                    <input type="text" id="recipientDesignation" placeholder="Recipient Designation">
+                    <input type="text" id="recipientOrg" placeholder="Department/Organization Name">
+                    <input type="text" id="recipientAddress" placeholder="Office Address">
+                </fieldset>
+                <fieldset>
+                    <legend>3. Grievance Details</legend>
+                    <select id="grievanceCategory">
+                        <option value="Public service complaint">Public Service Complaint</option>
+                        <option value="Infrastructure issue">Infrastructure Issue</option>
+                        <option value="Corruption complaint">Corruption Complaint</option>
+                        <option value="Workplace grievance">Workplace Grievance</option>
+                        <option value="Consumer complaint">Consumer Complaint</option>
+                        <option value="Discrimination complaint">Discrimination Complaint</option>
+                        <option value="Environmental concern">Environmental Concern</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <textarea id="grievanceDescription" rows="5" placeholder="Describe your grievance in detail: what happened, when, where, who was involved..."></textarea>
+                    <textarea id="previousActions" rows="3" placeholder="Any previous actions taken? Complaint numbers, dates of previous correspondence..."></textarea>
+                    <textarea id="reliefSought" rows="3" placeholder="What resolution/action do you seek?"></textarea>
+                </fieldset>
+                <fieldset>
+                    <legend>4. Generate & Refine</legend>
+                    <button type="button" class="ai-button" onclick="generateLetter()">✨ Generate Grievance Letter</button>
+                    <textarea id="letterBody" rows="15" placeholder="The AI-generated letter will appear here." style="margin-top: 15px;"></textarea>
+                </fieldset>
+            </form>
+        </div>
+        <div class="preview-pane">
+            <div class="preview-controls">
+                <h2>Live Preview</h2>
+                <div class="theme-switch-wrapper">
+                    <span>Classic</span>
+                    <label class="theme-switch"><input type="checkbox" id="theme-toggle"><span class="slider"></span></label>
+                    <span>Modern</span>
+                </div>
+                <button type="button" class="download-button" id="downloadPdfBtn">Download PDF</button>
+            </div>
+            <div id="grievance-output-container">
+                <p style="text-align: center; color: #888; margin-top: 2in;">Your Grievance Letter will appear here.</p>
+            </div>
+        </div>
+    </div>
+    <div class="loader-overlay" id="loader"><div class="loader"></div></div>
+    <style id="grv-styles-for-pdf">
+        body { font-family: 'Georgia', 'Times New Roman', Times, serif; color: #333; font-size: 12pt; line-height: 1.6; }
+        .grv-sender-info { margin-bottom: 25px; line-height: 1.4; }
+        .grv-date { margin-bottom: 20px; }
+        .grv-recipient-info { margin-bottom: 20px; line-height: 1.4; }
+        .grv-subject { font-weight: bold; margin-bottom: 20px; }
+        .grv-body { text-align: justify; }
+        .grv-body p { margin-bottom: 1.2em; }
+        .grv-closing { margin-top: 30px; }
+        .modern-theme { font-family: 'Lato', -apple-system, sans-serif; }
+        .modern-theme .grv-sender-info { border-left: 4px solid #4527A0; padding-left: 15px; }
+        .modern-theme .grv-subject { color: #4527A0; font-size: 1.1em; }
+        .modern-theme .grv-body p { text-align: left; }
+    </style>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="{{ url_for('static', filename='js/download-payment.js') }}"></script>
+    <script>
+        const loader = document.getElementById('loader');
+        const form = document.getElementById('grievanceForm');
+        const downloadBtn = document.getElementById('downloadPdfBtn');
+        const letterBodyTextarea = document.getElementById('letterBody');
+        const previewContainer = document.getElementById('grievance-output-container');
+        const themeToggle = document.getElementById('theme-toggle');
+
+        async function fetchAIContent(prompt) {
+            loader.style.display = 'flex';
+            try {
+                const response = await fetch('/generate_ai_content', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) });
+                if (!response.ok) { const error = await response.json(); throw new Error(error.error || `HTTP error! status: ${response.status}`); }
+                const data = await response.json(); return data.text;
+            } catch (error) { console.error("Error:", error); alert(`AI Generation Failed: ${error.message}`); return null; }
+            finally { loader.style.display = 'none'; }
+        }
+
+        async function generateLetter() {
+            const data = {
+                senderName: document.getElementById('senderName').value,
+                recipientName: document.getElementById('recipientName').value,
+                recipientDesignation: document.getElementById('recipientDesignation').value,
+                recipientOrg: document.getElementById('recipientOrg').value,
+                grievanceCategory: document.getElementById('grievanceCategory').value,
+                grievanceDescription: document.getElementById('grievanceDescription').value,
+                previousActions: document.getElementById('previousActions').value,
+                reliefSought: document.getElementById('reliefSought').value,
+            };
+            if (!data.senderName || !data.grievanceDescription || !data.reliefSought) {
+                alert("Please fill in Your Name, Grievance Description, and Relief Sought."); return;
+            }
+            const prompt = `Write a formal grievance letter body addressed to a government official/authority. Sender: ${data.senderName}. Recipient: ${data.recipientName}, ${data.recipientDesignation}, ${data.recipientOrg}. Category: ${data.grievanceCategory}. Grievance details: ${data.grievanceDescription}. Previous actions taken: ${data.previousActions || 'This is the first formal complaint'}. Relief/action sought: ${data.reliefSought}. Instructions: Write 3-4 formal paragraphs. Paragraph 1: Introduction and purpose of the letter. Paragraph 2: Detailed description of the grievance with facts. Paragraph 3: Previous actions taken (if any) and urgency. Paragraph 4: Specific relief sought and request for timely action. Tone must be formal, respectful but firm. Reference relevant rights as a citizen. Generate ONLY the letter body - no salutation, date, addresses, or closing signature.`;
+            const result = await fetchAIContent(prompt);
+            if (result) { letterBodyTextarea.value = result; updatePreview(); }
+        }
+
+        function updatePreview() {
+            const isModern = themeToggle.checked;
+            previewContainer.classList.toggle('modern-theme', isModern);
+            const data = {
+                senderName: document.getElementById('senderName').value || 'Your Name',
+                senderAddress: document.getElementById('senderAddress').value || 'Your Address',
+                senderContact: document.getElementById('senderContact').value || '',
+                recipientName: document.getElementById('recipientName').value || 'The Authority',
+                recipientDesignation: document.getElementById('recipientDesignation').value || '',
+                recipientOrg: document.getElementById('recipientOrg').value || 'Government Office',
+                recipientAddress: document.getElementById('recipientAddress').value || '',
+                grievanceCategory: document.getElementById('grievanceCategory').value,
+                letterBody: letterBodyTextarea.value,
+            };
+            const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            const bodyHtml = data.letterBody.split('\n').filter(p => p.trim()).map(p => `<p>${p.trim()}</p>`).join('');
+            const contactLine = data.senderContact ? `<div>${data.senderContact}</div>` : '';
+            const desigLine = data.recipientDesignation ? `<div>${data.recipientDesignation}</div>` : '';
+            previewContainer.innerHTML = `
+                <div class="grv-sender-info"><div><strong>${data.senderName}</strong></div><div>${data.senderAddress}</div>${contactLine}</div>
+                <div class="grv-date">${today}</div>
+                <div class="grv-recipient-info"><div><strong>${data.recipientName}</strong></div>${desigLine}<div>${data.recipientOrg}</div><div>${data.recipientAddress}</div></div>
+                <div class="grv-subject">Subject: Formal Grievance - ${data.grievanceCategory}</div>
+                <div class="grv-body"><p>Respected ${data.recipientName},</p>${bodyHtml || '<p>[Your grievance letter will appear here...]</p>'}</div>
+                <div class="grv-closing"><p>Yours faithfully,</p><br><br><p>${data.senderName}</p></div>`;
+        }
+
+        async function downloadPDF() {
+            const name = document.getElementById('senderName').value;
+            if (!name || !letterBodyTextarea.value) { alert('Please provide your name and generate the letter first.'); return; }
+            loader.style.display = 'flex';
+            const styles = document.getElementById('grv-styles-for-pdf').innerHTML;
+            const containerClass = themeToggle.checked ? 'modern-theme' : '';
+            const fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Grievance Letter</title><link href="https://fonts.googleapis.com/css2?family=Georgia&family=Lato:wght@400;700&display=swap" rel="stylesheet"><style>${styles}</style></head><body class="${containerClass}">${previewContainer.innerHTML}</body></html>`;
+            try {
+                const response = await fetch('/download_pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ html_content: fullHtml }) });
+                if (!response.ok) throw new Error('PDF generation failed');
+                const blob = await response.blob(); const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.style.display = 'none'; a.href = url;
+                a.download = `Grievance_Letter_${name.replace(/[^a-z0-9]/gi, '_')}.pdf`;
+                document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); a.remove();
+            } catch (e) { console.error(e); alert(e.message || 'Could not download PDF.'); }
+            finally { loader.style.display = 'none'; }
+        }
+
+        form.addEventListener('input', updatePreview);
+        themeToggle.addEventListener('change', updatePreview);
+        downloadBtn.addEventListener('click', downloadPDF);
+        updatePreview();
+    </script>
+</body>
+</html>
+

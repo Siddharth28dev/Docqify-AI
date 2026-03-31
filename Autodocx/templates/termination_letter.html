@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Termination Letter Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Georgia&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #c62828;
+            --secondary-color: #333;
+            --background-color: #f0f2f5;
+            --editor-bg: #ffffff;
+            --preview-bg: #fafafa;
+            --border-color: #d9d9d9;
+        }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: var(--background-color); }
+        .overleaf-container { display: flex; height: 100vh; }
+        .editor-pane, .preview-pane { height: 100%; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+        .editor-pane { flex: 1; background-color: var(--editor-bg); border-right: 1px solid var(--border-color); }
+        .preview-pane { flex: 1.2; background-color: var(--preview-bg); }
+        .preview-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+        #terminationForm { max-width: 600px; margin: auto; }
+        #terminationForm h1 { color: var(--primary-color); text-align: center; }
+        #terminationForm fieldset { border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 25px; }
+        #terminationForm legend { font-size: 1.3em; font-weight: 600; color: var(--primary-color); padding: 0 10px; }
+        input[type="text"], input[type="date"], select, textarea { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 5px; box-sizing: border-box; font-family: inherit; font-size: 1rem; }
+        .ai-button, .download-button { padding: 10px 18px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; font-size: 1em; }
+        .ai-button { background-color: #ffc107; color: #333; display: block; width: 100%; margin-top: 10px; }
+        .download-button { background-color: #28a745; color: white; }
+        .theme-switch-wrapper { display: flex; align-items: center; gap: 10px; }
+        .theme-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .theme-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 26px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary-color); }
+        input:checked + .slider:before { transform: translateX(24px); }
+        .loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .loader { border: 5px solid #f3f3f3; border-top: 5px solid var(--primary-color); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        #termination-output-container {
+            max-width: 8.5in; min-height: 11in; margin: 0 auto; background: white;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1); padding: 1in; box-sizing: border-box;
+            font-family: 'Georgia', 'Times New Roman', Times, serif; color: #333; font-size: 12pt; line-height: 1.6;
+            transition: all 0.3s ease;
+        }
+        .term-company-header { margin-bottom: 30px; border-bottom: 2px solid #c62828; padding-bottom: 15px; }
+        .term-company-header .company-name { font-size: 1.4em; font-weight: bold; color: #c62828; }
+        .term-date { margin-bottom: 20px; }
+        .term-recipient-info { margin-bottom: 20px; line-height: 1.4; }
+        .term-subject { font-weight: bold; margin-bottom: 20px; text-decoration: underline; }
+        .term-body { text-align: justify; }
+        .term-body p { margin-bottom: 1.2em; }
+        .term-closing { margin-top: 30px; }
+
+        #termination-output-container.modern-theme { font-family: 'Lato', -apple-system, sans-serif; font-size: 11pt; }
+        .modern-theme .term-company-header { border-bottom: 3px solid #c62828; }
+        .modern-theme .term-company-header .company-name { font-size: 1.6em; }
+        .modern-theme .term-body p { text-align: left; }
+    </style>
+</head>
+<body>
+    <div class="overleaf-container">
+        <div class="editor-pane">
+            <form id="terminationForm">
+                <h1>Termination Letter Generator</h1>
+                <fieldset>
+                    <legend>1. Company Details</legend>
+                    <input type="text" id="companyName" placeholder="Company Name">
+                    <input type="text" id="hrManagerName" placeholder="HR Manager / Issuing Authority Name">
+                    <input type="text" id="hrTitle" placeholder="HR Manager Designation">
+                </fieldset>
+                <fieldset>
+                    <legend>2. Employee Details</legend>
+                    <input type="text" id="employeeName" placeholder="Employee Full Name">
+                    <input type="text" id="employeeId" placeholder="Employee ID (Optional)">
+                    <input type="text" id="employeeDesignation" placeholder="Employee Designation">
+                    <input type="text" id="employeeDepartment" placeholder="Department">
+                </fieldset>
+                <fieldset>
+                    <legend>3. Termination Details</legend>
+                    <label for="terminationDate">Effective Date of Termination</label>
+                    <input type="date" id="terminationDate">
+                    <select id="terminationReason">
+                        <option value="Performance issues">Performance Issues</option>
+                        <option value="Policy violation">Policy Violation</option>
+                        <option value="Misconduct">Misconduct</option>
+                        <option value="Redundancy/Restructuring">Redundancy / Restructuring</option>
+                        <option value="End of contract">End of Contract</option>
+                        <option value="Probation failure">Probation Period Failure</option>
+                    </select>
+                    <textarea id="specificReasons" rows="4" placeholder="Specific reasons or details for termination (e.g., repeated absences, failure to meet targets)..."></textarea>
+                    <textarea id="severanceDetails" rows="3" placeholder="Optional: Severance package, final pay, benefits continuation details..."></textarea>
+                </fieldset>
+                <fieldset>
+                    <legend>4. Generate & Refine</legend>
+                    <button type="button" class="ai-button" onclick="generateLetter()">✨ Generate Termination Letter</button>
+                    <textarea id="letterBody" rows="15" placeholder="The AI-generated letter will appear here. Review carefully for legal accuracy." style="margin-top: 15px;"></textarea>
+                </fieldset>
+            </form>
+        </div>
+        <div class="preview-pane">
+            <div class="preview-controls">
+                <h2>Live Preview</h2>
+                <div class="theme-switch-wrapper">
+                    <span>Classic</span>
+                    <label class="theme-switch"><input type="checkbox" id="theme-toggle"><span class="slider"></span></label>
+                    <span>Modern</span>
+                </div>
+                <button type="button" class="download-button" id="downloadPdfBtn">Download PDF</button>
+            </div>
+            <div id="termination-output-container">
+                <p style="text-align: center; color: #888; margin-top: 2in;">Your Termination Letter will appear here.</p>
+            </div>
+        </div>
+    </div>
+    <div class="loader-overlay" id="loader"><div class="loader"></div></div>
+    <style id="term-styles-for-pdf">
+        body { font-family: 'Georgia', 'Times New Roman', Times, serif; color: #333; font-size: 12pt; line-height: 1.6; }
+        .term-company-header { margin-bottom: 30px; border-bottom: 2px solid #c62828; padding-bottom: 15px; }
+        .term-company-header .company-name { font-size: 1.4em; font-weight: bold; color: #c62828; }
+        .term-date { margin-bottom: 20px; }
+        .term-recipient-info { margin-bottom: 20px; line-height: 1.4; }
+        .term-subject { font-weight: bold; margin-bottom: 20px; text-decoration: underline; }
+        .term-body { text-align: justify; }
+        .term-body p { margin-bottom: 1.2em; }
+        .term-closing { margin-top: 30px; }
+        .modern-theme { font-family: 'Lato', -apple-system, sans-serif; font-size: 11pt; }
+        .modern-theme .term-company-header { border-bottom: 3px solid #c62828; }
+        .modern-theme .term-company-header .company-name { font-size: 1.6em; }
+        .modern-theme .term-body p { text-align: left; }
+    </style>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="{{ url_for('static', filename='js/download-payment.js') }}"></script>
+    <script>
+        const loader = document.getElementById('loader');
+        const form = document.getElementById('terminationForm');
+        const downloadBtn = document.getElementById('downloadPdfBtn');
+        const letterBodyTextarea = document.getElementById('letterBody');
+        const previewContainer = document.getElementById('termination-output-container');
+        const themeToggle = document.getElementById('theme-toggle');
+
+        async function fetchAIContent(prompt) {
+            loader.style.display = 'flex';
+            try {
+                const response = await fetch('/generate_ai_content', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) });
+                if (!response.ok) { const error = await response.json(); throw new Error(error.error || `HTTP error! status: ${response.status}`); }
+                const data = await response.json(); return data.text;
+            } catch (error) { console.error("Error:", error); alert(`AI Generation Failed: ${error.message}`); return null; }
+            finally { loader.style.display = 'none'; }
+        }
+
+        async function generateLetter() {
+            const data = {
+                employeeName: document.getElementById('employeeName').value,
+                employeeDesignation: document.getElementById('employeeDesignation').value,
+                employeeDepartment: document.getElementById('employeeDepartment').value,
+                terminationDate: document.getElementById('terminationDate').value,
+                terminationReason: document.getElementById('terminationReason').value,
+                specificReasons: document.getElementById('specificReasons').value,
+                severanceDetails: document.getElementById('severanceDetails').value,
+            };
+            if (!data.employeeName || !data.employeeDesignation || !data.terminationDate) {
+                alert("Please fill in Employee Name, Designation, and Termination Date."); return;
+            }
+            const prompt = `Write a formal and professional employee termination letter body. Employee: ${data.employeeName}, Designation: ${data.employeeDesignation}, Department: ${data.employeeDepartment}. Termination effective date: ${data.terminationDate}. Reason category: ${data.terminationReason}. Specific reasons: ${data.specificReasons || 'As previously discussed'}. Severance/final pay details: ${data.severanceDetails || 'As per company policy'}. Instructions: Write 3-4 paragraphs. Paragraph 1: Formal notice of termination with effective date. Paragraph 2: Reason for termination. Paragraph 3: Details about final pay, benefits, and return of company property. Paragraph 4: Information about any appeal process and wish them well. Tone must be firm but respectful and legally appropriate. Generate ONLY the letter body - no salutation, date, or closing signature.`;
+            const result = await fetchAIContent(prompt);
+            if (result) { letterBodyTextarea.value = result; updatePreview(); }
+        }
+
+        function updatePreview() {
+            const isModern = themeToggle.checked;
+            previewContainer.classList.toggle('modern-theme', isModern);
+            const data = {
+                companyName: document.getElementById('companyName').value || 'Company Name',
+                hrManagerName: document.getElementById('hrManagerName').value || 'HR Manager',
+                hrTitle: document.getElementById('hrTitle').value || 'Human Resources Manager',
+                employeeName: document.getElementById('employeeName').value || 'Employee Name',
+                employeeId: document.getElementById('employeeId').value,
+                employeeDesignation: document.getElementById('employeeDesignation').value || 'Designation',
+                employeeDepartment: document.getElementById('employeeDepartment').value || 'Department',
+                letterBody: letterBodyTextarea.value,
+            };
+            const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            const bodyHtml = data.letterBody.split('\n').filter(p => p.trim()).map(p => `<p>${p.trim()}</p>`).join('');
+            const empIdLine = data.employeeId ? `<div>Employee ID: ${data.employeeId}</div>` : '';
+            previewContainer.innerHTML = `
+                <div class="term-company-header"><div class="company-name">${data.companyName}</div><div>${data.hrTitle}</div></div>
+                <div class="term-date">${today}</div>
+                <div class="term-recipient-info"><div><strong>${data.employeeName}</strong></div>${empIdLine}<div>${data.employeeDesignation}, ${data.employeeDepartment}</div></div>
+                <div class="term-subject">Subject: Notice of Termination of Employment</div>
+                <div class="term-body"><p>Dear ${data.employeeName},</p>${bodyHtml || '<p>[Termination letter content will appear here...]</p>'}</div>
+                <div class="term-closing"><p>Sincerely,</p><br><br><p>${data.hrManagerName}</p><p>${data.hrTitle}</p><p>${data.companyName}</p></div>`;
+        }
+
+        async function downloadPDF() {
+            const name = document.getElementById('employeeName').value;
+            if (!name || !letterBodyTextarea.value) { alert('Please provide employee name and generate the letter first.'); return; }
+            loader.style.display = 'flex';
+            const styles = document.getElementById('term-styles-for-pdf').innerHTML;
+            const containerClass = themeToggle.checked ? 'modern-theme' : '';
+            const fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Termination Letter</title><link href="https://fonts.googleapis.com/css2?family=Georgia&family=Lato:wght@400;700&display=swap" rel="stylesheet"><style>${styles}</style></head><body class="${containerClass}">${previewContainer.innerHTML}</body></html>`;
+            try {
+                const response = await fetch('/download_pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ html_content: fullHtml }) });
+                if (!response.ok) throw new Error('PDF generation failed');
+                const blob = await response.blob(); const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.style.display = 'none'; a.href = url;
+                a.download = `Termination_Letter_${name.replace(/[^a-z0-9]/gi, '_')}.pdf`;
+                document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); a.remove();
+            } catch (e) { console.error(e); alert(e.message || 'Could not download PDF.'); }
+            finally { loader.style.display = 'none'; }
+        }
+
+        form.addEventListener('input', updatePreview);
+        themeToggle.addEventListener('change', updatePreview);
+        downloadBtn.addEventListener('click', downloadPDF);
+        updatePreview();
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Tender Document Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Georgia&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #0D47A1;
+            --secondary-color: #333;
+            --background-color: #f0f2f5;
+            --editor-bg: #ffffff;
+            --preview-bg: #fafafa;
+            --border-color: #d9d9d9;
+        }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: var(--background-color); }
+        .overleaf-container { display: flex; height: 100vh; }
+        .editor-pane, .preview-pane { height: 100%; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+        .editor-pane { flex: 1; background-color: var(--editor-bg); border-right: 1px solid var(--border-color); }
+        .preview-pane { flex: 1.2; background-color: var(--preview-bg); }
+        .preview-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+        #tenderForm { max-width: 600px; margin: auto; }
+        #tenderForm h1 { color: var(--primary-color); text-align: center; }
+        #tenderForm fieldset { border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 25px; }
+        #tenderForm legend { font-size: 1.3em; font-weight: 600; color: var(--primary-color); padding: 0 10px; }
+        input[type="text"], input[type="date"], select, textarea { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 5px; box-sizing: border-box; font-family: inherit; font-size: 1rem; }
+        .ai-button, .download-button { padding: 10px 18px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; font-size: 1em; }
+        .ai-button { background-color: #ffc107; color: #333; display: block; width: 100%; margin-top: 10px; }
+        .download-button { background-color: #28a745; color: white; }
+        .theme-switch-wrapper { display: flex; align-items: center; gap: 10px; }
+        .theme-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .theme-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 26px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary-color); }
+        input:checked + .slider:before { transform: translateX(24px); }
+        .loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .loader { border: 5px solid #f3f3f3; border-top: 5px solid var(--primary-color); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        #tender-output-container {
+            max-width: 8.5in; min-height: 11in; margin: 0 auto; background: white;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1); padding: 1in; box-sizing: border-box;
+            font-family: 'Georgia', 'Times New Roman', Times, serif; color: #333; font-size: 11pt; line-height: 1.6;
+            transition: all 0.3s ease;
+        }
+        .tender-header { text-align: center; margin-bottom: 30px; border-bottom: 3px double #0D47A1; padding-bottom: 15px; }
+        .tender-header .org-name { font-size: 1.3em; font-weight: bold; color: #0D47A1; }
+        .tender-header h2 { margin: 10px 0 5px; text-transform: uppercase; letter-spacing: 1px; }
+        .tender-header .tender-no { font-size: 0.9em; color: #555; }
+        .tender-meta { margin-bottom: 25px; border: 1px solid #ddd; padding: 15px; }
+        .tender-meta-row { display: flex; margin-bottom: 5px; }
+        .tender-meta-row .label { font-weight: bold; min-width: 200px; }
+        .tender-body { text-align: justify; }
+        .tender-body p { margin-bottom: 1em; }
+        .tender-body h3 { margin-top: 20px; margin-bottom: 10px; color: #0D47A1; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+        .tender-note { margin-top: 30px; padding: 15px; background: #E3F2FD; border-left: 4px solid #0D47A1; font-size: 0.9em; }
+
+        #tender-output-container.modern-theme { font-family: 'Lato', -apple-system, sans-serif; }
+        .modern-theme .tender-header { border-bottom: 4px solid #0D47A1; }
+        .modern-theme .tender-meta { border-radius: 8px; background: #f8f9fa; border-color: #e0e0e0; }
+        .modern-theme .tender-body h3 { border-left: 4px solid #0D47A1; border-bottom: none; padding-left: 12px; }
+        .modern-theme .tender-body p { text-align: left; }
+    </style>
+</head>
+<body>
+    <div class="overleaf-container">
+        <div class="editor-pane">
+            <form id="tenderForm">
+                <h1>Tender Document Generator</h1>
+                <fieldset>
+                    <legend>1. Issuing Authority</legend>
+                    <input type="text" id="orgName" placeholder="Government Department/Organization Name">
+                    <input type="text" id="orgAddress" placeholder="Office Address">
+                    <input type="text" id="tenderNo" placeholder="Tender/NIT Number (e.g., NIT/2025/001)">
+                </fieldset>
+                <fieldset>
+                    <legend>2. Tender Details</legend>
+                    <input type="text" id="tenderTitle" placeholder="Tender Title (e.g., Construction of Community Health Center)">
+                    <select id="tenderType">
+                        <option value="Open Tender">Open Tender</option>
+                        <option value="Limited Tender">Limited Tender</option>
+                        <option value="Single Tender">Single Tender / Proprietary</option>
+                        <option value="Two-Stage Tender">Two-Stage Tender</option>
+                        <option value="e-Tender">e-Tender</option>
+                    </select>
+                    <select id="projectCategory">
+                        <option value="Civil Construction">Civil Construction</option>
+                        <option value="IT & Technology">IT & Technology</option>
+                        <option value="Supply of Goods">Supply of Goods</option>
+                        <option value="Consultancy Services">Consultancy Services</option>
+                        <option value="Maintenance & Repair">Maintenance & Repair</option>
+                        <option value="Transportation">Transportation</option>
+                    </select>
+                    <input type="text" id="estimatedCost" placeholder="Estimated Cost (e.g., Rs. 2 Crore / $500,000)">
+                    <input type="text" id="emd" placeholder="Earnest Money Deposit / Bid Security (e.g., Rs. 2 Lakh)">
+                </fieldset>
+                <fieldset>
+                    <legend>3. Key Dates</legend>
+                    <label for="publishDate">Tender Publish Date</label>
+                    <input type="date" id="publishDate">
+                    <label for="lastDate">Last Date for Submission</label>
+                    <input type="date" id="lastDate">
+                    <label for="openingDate">Tender Opening Date</label>
+                    <input type="date" id="openingDate">
+                </fieldset>
+                <fieldset>
+                    <legend>4. Scope & Requirements</legend>
+                    <textarea id="scopeOfWork" rows="5" placeholder="Scope of work / Description of goods or services required..."></textarea>
+                    <textarea id="eligibilityCriteria" rows="4" placeholder="Eligibility criteria for bidders (experience, turnover, certifications)..."></textarea>
+                    <textarea id="additionalTerms" rows="3" placeholder="Optional: Any special terms, conditions, or technical specifications..."></textarea>
+                </fieldset>
+                <fieldset>
+                    <legend>5. Generate & Refine</legend>
+                    <button type="button" class="ai-button" onclick="generateTender()">✨ Generate Tender Document</button>
+                    <textarea id="tenderBody" rows="20" placeholder="The AI-generated tender document will appear here." style="margin-top: 15px;"></textarea>
+                </fieldset>
+            </form>
+        </div>
+        <div class="preview-pane">
+            <div class="preview-controls">
+                <h2>Live Preview</h2>
+                <div class="theme-switch-wrapper">
+                    <span>Classic</span>
+                    <label class="theme-switch"><input type="checkbox" id="theme-toggle"><span class="slider"></span></label>
+                    <span>Modern</span>
+                </div>
+                <button type="button" class="download-button" id="downloadPdfBtn">Download PDF</button>
+            </div>
+            <div id="tender-output-container">
+                <p style="text-align: center; color: #888; margin-top: 2in;">Your Tender Document will appear here.</p>
+            </div>
+        </div>
+    </div>
+    <div class="loader-overlay" id="loader"><div class="loader"></div></div>
+    <style id="tender-styles-for-pdf">
+        body { font-family: 'Georgia', 'Times New Roman', Times, serif; color: #333; font-size: 11pt; line-height: 1.6; }
+        .tender-header { text-align: center; margin-bottom: 30px; border-bottom: 3px double #0D47A1; padding-bottom: 15px; }
+        .tender-header .org-name { font-size: 1.3em; font-weight: bold; color: #0D47A1; }
+        .tender-header h2 { margin: 10px 0 5px; text-transform: uppercase; letter-spacing: 1px; }
+        .tender-header .tender-no { font-size: 0.9em; color: #555; }
+        .tender-meta { margin-bottom: 25px; border: 1px solid #ddd; padding: 15px; }
+        .tender-meta-row { display: flex; margin-bottom: 5px; }
+        .tender-meta-row .label { font-weight: bold; min-width: 200px; }
+        .tender-body { text-align: justify; }
+        .tender-body p { margin-bottom: 1em; }
+        .tender-body h3 { margin-top: 20px; margin-bottom: 10px; color: #0D47A1; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+        .tender-note { margin-top: 30px; padding: 15px; background: #E3F2FD; border-left: 4px solid #0D47A1; font-size: 0.9em; }
+        .modern-theme { font-family: 'Lato', -apple-system, sans-serif; }
+        .modern-theme .tender-header { border-bottom: 4px solid #0D47A1; }
+        .modern-theme .tender-meta { border-radius: 8px; background: #f8f9fa; }
+        .modern-theme .tender-body h3 { border-left: 4px solid #0D47A1; border-bottom: none; padding-left: 12px; }
+    </style>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="{{ url_for('static', filename='js/download-payment.js') }}"></script>
+    <script>
+        const loader = document.getElementById('loader');
+        const form = document.getElementById('tenderForm');
+        const downloadBtn = document.getElementById('downloadPdfBtn');
+        const tenderBodyTextarea = document.getElementById('tenderBody');
+        const previewContainer = document.getElementById('tender-output-container');
+        const themeToggle = document.getElementById('theme-toggle');
+
+        async function fetchAIContent(prompt) {
+            loader.style.display = 'flex';
+            try {
+                const response = await fetch('/generate_ai_content', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) });
+                if (!response.ok) { const error = await response.json(); throw new Error(error.error || `HTTP error! status: ${response.status}`); }
+                const data = await response.json(); return data.text;
+            } catch (error) { console.error("Error:", error); alert(`AI Generation Failed: ${error.message}`); return null; }
+            finally { loader.style.display = 'none'; }
+        }
+
+        async function generateTender() {
+            const data = {
+                orgName: document.getElementById('orgName').value,
+                tenderTitle: document.getElementById('tenderTitle').value,
+                tenderType: document.getElementById('tenderType').value,
+                projectCategory: document.getElementById('projectCategory').value,
+                estimatedCost: document.getElementById('estimatedCost').value,
+                emd: document.getElementById('emd').value,
+                scopeOfWork: document.getElementById('scopeOfWork').value,
+                eligibilityCriteria: document.getElementById('eligibilityCriteria').value,
+                additionalTerms: document.getElementById('additionalTerms').value,
+            };
+            if (!data.tenderTitle || !data.scopeOfWork) {
+                alert("Please fill in Tender Title and Scope of Work."); return;
+            }
+            const prompt = `Generate a formal government tender / Notice Inviting Tender (NIT) document body. Use numbered section headings on their own lines.
+
+Organization: ${data.orgName || 'Government Department'}. Title: ${data.tenderTitle}. Type: ${data.tenderType}. Category: ${data.projectCategory}. Estimated cost: ${data.estimatedCost || 'As per BOQ'}. EMD: ${data.emd || 'As specified'}. Scope of work: ${data.scopeOfWork}. Eligibility: ${data.eligibilityCriteria || 'As per standard government norms'}. Additional terms: ${data.additionalTerms || 'Standard terms apply'}.
+
+Include these sections with headings like "1. Scope of Work", "2. Eligibility Criteria", "3. Tender Fee & EMD", "4. Submission Guidelines", "5. Evaluation Criteria", "6. Terms & Conditions", "7. Important Instructions". Each heading on its own line starting with a number. Use formal, precise government procurement language. Generate ONLY the tender body sections - no header or footer.`;
+            const result = await fetchAIContent(prompt);
+            if (result) { tenderBodyTextarea.value = result; updatePreview(); }
+        }
+
+        function updatePreview() {
+            const isModern = themeToggle.checked;
+            previewContainer.classList.toggle('modern-theme', isModern);
+            const data = {
+                orgName: document.getElementById('orgName').value || 'Government Department',
+                orgAddress: document.getElementById('orgAddress').value || '',
+                tenderNo: document.getElementById('tenderNo').value || 'NIT/____/___',
+                tenderTitle: document.getElementById('tenderTitle').value || 'Tender Title',
+                tenderType: document.getElementById('tenderType').value,
+                estimatedCost: document.getElementById('estimatedCost').value || 'As per BOQ',
+                emd: document.getElementById('emd').value || 'As specified',
+                publishDate: document.getElementById('publishDate').value || 'TBD',
+                lastDate: document.getElementById('lastDate').value || 'TBD',
+                openingDate: document.getElementById('openingDate').value || 'TBD',
+                tenderBody: tenderBodyTextarea.value,
+            };
+            let bodyHtml = '';
+            if (data.tenderBody) {
+                bodyHtml = data.tenderBody.split('\n').filter(l => l.trim()).map(line => {
+                    if (/^\d+\.\s/.test(line.trim())) return `<h3>${line.trim()}</h3>`;
+                    return `<p>${line.trim()}</p>`;
+                }).join('');
+            }
+            previewContainer.innerHTML = `
+                <div class="tender-header">
+                    <div class="org-name">${data.orgName}</div>
+                    ${data.orgAddress ? `<div>${data.orgAddress}</div>` : ''}
+                    <h2>NOTICE INVITING TENDER</h2>
+                    <div class="tender-no">${data.tenderNo}</div>
+                </div>
+                <div class="tender-meta">
+                    <div class="tender-meta-row"><span class="label">Tender Title:</span> <span><strong>${data.tenderTitle}</strong></span></div>
+                    <div class="tender-meta-row"><span class="label">Tender Type:</span> <span>${data.tenderType}</span></div>
+                    <div class="tender-meta-row"><span class="label">Estimated Cost:</span> <span>${data.estimatedCost}</span></div>
+                    <div class="tender-meta-row"><span class="label">EMD / Bid Security:</span> <span>${data.emd}</span></div>
+                    <div class="tender-meta-row"><span class="label">Publish Date:</span> <span>${data.publishDate}</span></div>
+                    <div class="tender-meta-row"><span class="label">Last Date for Submission:</span> <span>${data.lastDate}</span></div>
+                    <div class="tender-meta-row"><span class="label">Tender Opening Date:</span> <span>${data.openingDate}</span></div>
+                </div>
+                <div class="tender-body">${bodyHtml || '<p>[Tender document content will appear here...]</p>'}</div>
+                <div class="tender-note"><strong>Note:</strong> The issuing authority reserves the right to accept or reject any or all bids without assigning any reason. Corrigendum, if any, will be published on the official website.</div>`;
+        }
+
+        async function downloadPDF() {
+            const title = document.getElementById('tenderTitle').value;
+            if (!title || !tenderBodyTextarea.value) { alert('Please provide a title and generate the tender document first.'); return; }
+            loader.style.display = 'flex';
+            const styles = document.getElementById('tender-styles-for-pdf').innerHTML;
+            const containerClass = themeToggle.checked ? 'modern-theme' : '';
+            const fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Tender Document</title><link href="https://fonts.googleapis.com/css2?family=Georgia&family=Lato:wght@400;700&display=swap" rel="stylesheet"><style>${styles}</style></head><body class="${containerClass}">${previewContainer.innerHTML}</body></html>`;
+            try {
+                const response = await fetch('/download_pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ html_content: fullHtml }) });
+                if (!response.ok) throw new Error('PDF generation failed');
+                const blob = await response.blob(); const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.style.display = 'none'; a.href = url;
+                a.download = `Tender_Document_${title.replace(/[^a-z0-9]/gi, '_').substring(0, 30)}.pdf`;
+                document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); a.remove();
+            } catch (e) { console.error(e); alert(e.message || 'Could not download PDF.'); }
+            finally { loader.style.display = 'none'; }
+        }
+
+        form.addEventListener('input', updatePreview);
+        themeToggle.addEventListener('change', updatePreview);
+        downloadBtn.addEventListener('click', downloadPDF);
+        updatePreview();
+    </script>
+</body>
+</html>
+

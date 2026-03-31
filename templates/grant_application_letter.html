@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Grant Application Letter Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Georgia&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- General & Layout Styles --- */
+        :root {
+            --primary-color: #003865; /* A serious, institutional blue */
+            --secondary-color: #343a40;
+            --background-color: #f0f2f5;
+            --editor-bg: #ffffff;
+            --preview-bg: #f8f9fa;
+            --border-color: #dee2e6;
+        }
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--background-color);
+        }
+        .overleaf-container { display: flex; height: 100vh; }
+        .editor-pane, .preview-pane {
+            height: 100%; overflow-y: auto; padding: 20px; box-sizing: border-box;
+        }
+        .editor-pane { flex: 1; background-color: var(--editor-bg); border-right: 1px solid var(--border-color); }
+        .preview-pane { flex: 1.2; background-color: var(--preview-bg); }
+        .preview-controls {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;
+        }
+
+        /* --- Form Styles --- */
+        #grantForm { max-width: 600px; margin: auto; }
+        #grantForm h1 { color: var(--primary-color); text-align: center; }
+        #grantForm fieldset { border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 25px; }
+        #grantForm legend { font-size: 1.3em; font-weight: 600; color: var(--primary-color); padding: 0 10px; }
+        input[type="text"], textarea {
+            width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid var(--border-color);
+            border-radius: 5px; box-sizing: border-box; font-family: inherit; font-size: 1rem;
+        }
+        .ai-button, .download-button { padding: 10px 18px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; font-size: 1em; }
+        .ai-button { background-color: #ffc107; color: #333; display: block; width: 100%; margin-top: 10px; }
+        .download-button { background-color: #28a745; color: white; }
+
+        /* --- Theme Switch Styles --- */
+        .theme-switch-wrapper { display: flex; align-items: center; gap: 10px; }
+        .theme-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .theme-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 26px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary-color); }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        /* --- Loader Styles --- */
+        .loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .loader { border: 5px solid #f3f3f3; border-top: 5px solid var(--primary-color); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- Grant Letter PREVIEW STYLES --- */
+        /* BASE (SIMPLE) THEME */
+        #grant-output-container {
+            max-width: 8.5in; min-height: 11in; margin: 0 auto; background: white;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1); padding: 1in; box-sizing: border-box;
+            font-family: 'Georgia', 'Times New Roman', Times, serif; color: #333; font-size: 12pt; line-height: 1.6;
+            transition: all 0.3s ease;
+        }
+        .grant-sender-info, .grant-recipient-info { margin-bottom: 30px; line-height: 1.4; }
+        .grant-date { margin-bottom: 30px; }
+        .grant-subject { font-weight: bold; margin-top: 20px; margin-bottom: 20px; }
+        .grant-body p { margin-bottom: 1.2em; text-align: justify; }
+        .grant-closing { margin-top: 30px; }
+
+        /* MODERN THEME OVERRIDES */
+        #grant-output-container.modern-theme {
+            font-family: 'Lato', -apple-system, sans-serif;
+            font-size: 11pt;
+        }
+        .modern-theme .grant-sender-info {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        .modern-theme .grant-pi-name {
+            font-size: 1.4em;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        .modern-theme .grant-pi-details {
+            color: #6c757d;
+        }
+        .modern-theme .grant-body p {
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overleaf-container">
+        <!-- Editor Pane -->
+        <div class="editor-pane">
+            <form id="grantForm">
+                <h1>Grant Application Letter</h1>
+                <fieldset>
+                    <legend>Investigator & Institution</legend>
+                    <input type="text" id="researcherName" placeholder="Your Name (Principal Investigator)">
+                    <input type="text" id="researcherTitle" placeholder="Your Title (e.g., Assistant Professor)">
+                    <input type="text" id="institutionName" placeholder="Your University/Institution Name">
+                </fieldset>
+                <fieldset>
+                    <legend>Funding Agency & Proposal</legend>
+                    <input type="text" id="agencyName" placeholder="Funding Agency Name (e.g., National Science Foundation)">
+                    <input type="text" id="programName" placeholder="Specific Program/Call for Proposals (e.g., CAREER)">
+                    <input type="text" id="projectTitle" placeholder="Title of Your Research Project">
+                </fieldset>
+                <fieldset>
+                    <legend>Core Proposal Summary</legend>
+                    <textarea id="problemSignificance" rows="5" placeholder="What is the key problem your research addresses and why is it significant?"></textarea>
+                    <textarea id="projectAims" rows="4" placeholder="Briefly list the main aims and objectives of your project."></textarea>
+                    <textarea id="alignment" rows="4" placeholder="Why is this project a good fit for this specific agency's mission or program goals?"></textarea>
+                </fieldset>
+                <fieldset>
+                    <legend>Financial Request</legend>
+                    <input type="text" id="fundingAmount" placeholder="Total Amount Requested (e.g., $500,000 USD)">
+                    <input type="text" id="projectDuration" placeholder="Project Duration (e.g., 5 years)">
+                </fieldset>
+                <fieldset>
+                    <legend>Generate & Refine</legend>
+                    <button type="button" class="ai-button" onclick="generateLetter()">✨ Assemble Letter</button>
+                    <textarea id="letterBody" rows="15" placeholder="The assembled letter body will appear here. Review for accuracy and tone." style="margin-top: 15px;"></textarea>
+                </fieldset>
+            </form>
+        </div>
+
+        <!-- Preview Pane -->
+        <div class="preview-pane">
+            <div class="preview-controls">
+                <h2>Live Preview</h2>
+                <div class="theme-switch-wrapper">
+                    <span>Simple</span>
+                    <label class="theme-switch">
+                        <input type="checkbox" id="theme-toggle">
+                        <span class="slider"></span>
+                    </label>
+                    <span>Modern</span>
+                </div>
+                <button type="button" class="download-button" id="downloadPdfBtn">Download PDF</button>
+            </div>
+            <div id="grant-output-container">
+                <p style="text-align: center; color: #888; margin-top: 2in;">Your grant letter will appear here.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loader -->
+    <div class="loader-overlay" id="loader"><div class="loader"></div></div>
+
+    <!-- Hidden styles for PDF -->
+    <style id="grant-styles-for-pdf">
+        body { font-family: 'Georgia', 'Times New Roman', Times, serif; color: #333; font-size: 12pt; line-height: 1.6; }
+        .grant-sender-info, .grant-recipient-info { margin-bottom: 30px; line-height: 1.4; }
+        .grant-date { margin-bottom: 30px; }
+        .grant-subject { font-weight: bold; margin-top: 20px; margin-bottom: 20px; }
+        .grant-body p { margin-bottom: 1.2em; text-align: justify; }
+        .grant-closing { margin-top: 30px; }
+        .modern-theme { font-family: 'Lato', -apple-system, sans-serif; font-size: 11pt; }
+        .modern-theme .grant-sender-info { border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 25px; }
+        .modern-theme .grant-pi-name { font-size: 1.4em; font-weight: 700; color: #003865; }
+        .modern-theme .grant-pi-details { color: #6c757d; }
+        .modern-theme .grant-body p { text-align: left; }
+    </style>
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="{{ url_for('static', filename='js/download-payment.js') }}"></script>
+    <script>
+        const loader = document.getElementById('loader');
+        const form = document.getElementById('grantForm');
+        const downloadBtn = document.getElementById('downloadPdfBtn');
+        const letterBodyTextarea = document.getElementById('letterBody');
+        const previewContainer = document.getElementById('grant-output-container');
+        const themeToggle = document.getElementById('theme-toggle');
+
+        async function fetchAIContent(prompt) { /* ... (same as previous) ... */ }
+
+        async function generateLetter() {
+            const data = {
+                projectTitle: document.getElementById('projectTitle').value,
+                agencyName: document.getElementById('agencyName').value,
+                programName: document.getElementById('programName').value,
+                problemSignificance: document.getElementById('problemSignificance').value,
+                projectAims: document.getElementById('projectAims').value,
+                alignment: document.getElementById('alignment').value,
+                fundingAmount: document.getElementById('fundingAmount').value,
+                projectDuration: document.getElementById('projectDuration').value,
+            };
+
+            if (!data.projectTitle || !data.agencyName || !data.problemSignificance || !data.fundingAmount) {
+                alert("Please fill in Project Title, Agency Name, Problem/Significance, and Funding Amount.");
+                return;
+            }
+
+            const prompt = `
+                You are an experienced Principal Investigator writing a formal cover letter for a grant application.
+
+                **Data:**
+                - Project Title: ${data.projectTitle}
+                - Funding Agency: ${data.agencyName}
+                - Specific Program: ${data.programName || 'the relevant funding opportunity'}
+                - Problem & Significance: ${data.problemSignificance}
+                - Aims/Objectives: ${data.projectAims}
+                - Alignment with Agency: ${data.alignment}
+                - Total Request: ${data.fundingAmount} over ${data.projectDuration}
+
+                **Instructions:**
+                1.  **Opening:** Start by formally submitting the proposal. "Please accept this letter as a formal submission of the research proposal titled '[Project Title]' for consideration under the [Program Name]."
+                2.  **Core Argument:** Write 2-3 paragraphs that:
+                    a. Briefly summarize the core problem and its significance.
+                    b. Concisely state the project's primary aims.
+                    c. Crucially, explain why this project aligns with the agency's mission.
+                3.  **Request:** State the total funding request and duration clearly.
+                4.  **Closing:** End with a formal closing, expressing thanks for their consideration and referring to the detailed proposal attached.
+                5.  **Tone:** Highly professional, confident, and formal.
+                6.  **IMPORTANT:** Generate ONLY the letter body. Do not include salutations, subjects, dates, or signatures.
+            `;
+
+            const result = await fetchAIContent(prompt);
+            if (result) {
+                letterBodyTextarea.value = result;
+                updatePreview();
+            }
+        }
+
+        function updatePreview() {
+            const isModern = themeToggle.checked;
+            previewContainer.classList.toggle('modern-theme', isModern);
+
+            const data = {
+                researcherName: document.getElementById('researcherName').value,
+                researcherTitle: document.getElementById('researcherTitle').value,
+                institutionName: document.getElementById('institutionName').value,
+                agencyName: document.getElementById('agencyName').value,
+                programName: document.getElementById('programName').value,
+                projectTitle: document.getElementById('projectTitle').value,
+                letterBody: letterBodyTextarea.value,
+            };
+
+            const today = new Date();
+            const dateString = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            const bodyWithParagraphs = data.letterBody.split('\n').filter(p => p.trim() !== '').map(p => `<p>${p.trim()}</p>`).join('');
+
+            let html = `
+                <div class="grant-sender-info">
+                    <div class="grant-pi-name">${data.researcherName || 'Principal Investigator'}</div>
+                    <div class="grant-pi-details">${data.researcherTitle || 'Title'}</div>
+                    <div class="grant-pi-details">${data.institutionName || 'Institution'}</div>
+                </div>
+                <div class="grant-date">${dateString}</div>
+                <div class="grant-recipient-info">
+                    <div>${data.programName ? data.programName + ' Program Officer' : 'Grant Review Committee'}</div>
+                    <div>${data.agencyName || 'Funding Agency'}</div>
+                </div>
+                <div class="grant-subject"><strong>RE:</strong> Grant Proposal Submission: "${data.projectTitle || 'Project Title'}"</div>
+                <div class="grant-salutation">Dear Review Committee,</div>
+                <div class="grant-body">${bodyWithParagraphs || '<p>[Your letter content will be assembled here...]</p>'}</div>
+                <div class="grant-closing">
+                    <p>Thank you for your time and consideration.</p>
+                    <p>Sincerely,</p><br><br>
+                    <p>${data.researcherName || 'Principal Investigator'}</p>
+                </div>
+            `;
+
+            previewContainer.innerHTML = html;
+        }
+
+        async function downloadPDF() { /* ... (same as previous, with updated filename logic) ... */ }
+
+        // Re-pasting full functions for completeness
+        async function fetchAIContent(prompt) {
+            loader.style.display = 'flex';
+            try {
+                const response = await fetch('/generate_ai_content', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+                if (!response.ok) { const error = await response.json(); throw new Error(error.error || `HTTP error! status: ${response.status}`); }
+                const data = await response.json();
+                return data.text;
+            } catch (error) {
+                console.error("Error fetching AI content:", error);
+                alert(`AI Generation Failed: ${error.message}`);
+                return null;
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+        async function downloadPDF() {
+            const projectTitle = document.getElementById('projectTitle').value;
+            if (!projectTitle || !letterBodyTextarea.value) {
+                alert('Please provide a project title and assemble the letter before downloading.');
+                return;
+            }
+            loader.style.display = 'flex';
+            const contentToPrint = previewContainer.innerHTML;
+            const styles = document.getElementById('grant-styles-for-pdf').innerHTML;
+            const isModern = themeToggle.checked;
+            const containerClass = isModern ? 'modern-theme' : '';
+            const fullHtmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Grant Application Letter</title><link href="https://fonts.googleapis.com/css2?family=Georgia&family=Lato:wght@400;700&display=swap" rel="stylesheet"><style>${styles}</style></head><body class="${containerClass}">${contentToPrint}</body></html>`;
+            try {
+                const response = await fetch('/download_pdf', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ html_content: fullHtmlContent })
+                });
+                if (!response.ok) throw new Error(`PDF generation failed: ${response.statusText}`);
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                const safeName = projectTitle.replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_');
+                a.download = `Grant_Letter_${safeName || 'project'}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            } catch (error) {
+                console.error('Error downloading PDF:', error);
+                alert(error.message || 'Could not download PDF. See console for details.');
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        // --- Event Listeners ---
+        form.addEventListener('input', updatePreview);
+        themeToggle.addEventListener('change', updatePreview);
+        downloadBtn.addEventListener('click', downloadPDF);
+
+        // --- Initial Load ---
+        updatePreview();
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Scholarship Application Letter Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Georgia&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #1565C0;
+            --secondary-color: #333;
+            --background-color: #f0f2f5;
+            --editor-bg: #ffffff;
+            --preview-bg: #fafafa;
+            --border-color: #d9d9d9;
+        }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: var(--background-color); }
+        .overleaf-container { display: flex; height: 100vh; }
+        .editor-pane, .preview-pane { height: 100%; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+        .editor-pane { flex: 1; background-color: var(--editor-bg); border-right: 1px solid var(--border-color); }
+        .preview-pane { flex: 1.2; background-color: var(--preview-bg); }
+        .preview-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+        #scholarshipForm { max-width: 600px; margin: auto; }
+        #scholarshipForm h1 { color: var(--primary-color); text-align: center; }
+        #scholarshipForm fieldset { border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 25px; }
+        #scholarshipForm legend { font-size: 1.3em; font-weight: 600; color: var(--primary-color); padding: 0 10px; }
+        input[type="text"], select, textarea { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 5px; box-sizing: border-box; font-family: inherit; font-size: 1rem; }
+        .ai-button, .download-button { padding: 10px 18px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; font-size: 1em; }
+        .ai-button { background-color: #ffc107; color: #333; display: block; width: 100%; margin-top: 10px; }
+        .download-button { background-color: #28a745; color: white; }
+        .theme-switch-wrapper { display: flex; align-items: center; gap: 10px; }
+        .theme-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .theme-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 26px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary-color); }
+        input:checked + .slider:before { transform: translateX(24px); }
+        .loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .loader { border: 5px solid #f3f3f3; border-top: 5px solid var(--primary-color); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        #scholarship-output-container {
+            max-width: 8.5in; min-height: 11in; margin: 0 auto; background: white;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1); padding: 1in; box-sizing: border-box;
+            font-family: 'Georgia', 'Times New Roman', Times, serif; color: #222; font-size: 12pt; line-height: 1.6;
+            transition: all 0.3s ease;
+        }
+        .sch-header { text-align: center; margin-bottom: 30px; }
+        .sch-header .name { font-size: 1.4em; font-weight: bold; }
+        .sch-header .scholarship { font-size: 1.1em; color: #555; }
+        .sch-sender-info, .sch-recipient-info { margin-bottom: 20px; line-height: 1.4; }
+        .sch-date { margin-bottom: 20px; }
+        .sch-body { text-align: justify; }
+        .sch-body p { margin-bottom: 1.2em; }
+        .sch-closing { margin-top: 30px; }
+
+        #scholarship-output-container.modern-theme { font-family: 'Lato', -apple-system, sans-serif; }
+        .modern-theme .sch-header { text-align: left; border-top: 4px solid var(--primary-color); padding-top: 15px; }
+        .modern-theme .sch-header .name { font-size: 1.6em; color: var(--primary-color); }
+        .modern-theme .sch-body p { text-align: left; }
+    </style>
+</head>
+<body>
+    <div class="overleaf-container">
+        <div class="editor-pane">
+            <form id="scholarshipForm">
+                <h1>Scholarship Letter Generator</h1>
+                <fieldset>
+                    <legend>1. Your Details</legend>
+                    <input type="text" id="applicantName" placeholder="Your Full Name">
+                    <input type="text" id="applicantEmail" placeholder="Your Email Address">
+                    <input type="text" id="applicantInstitution" placeholder="Your Current Institution/School">
+                    <input type="text" id="applicantProgram" placeholder="Your Current Program/Grade">
+                </fieldset>
+                <fieldset>
+                    <legend>2. Scholarship Details</legend>
+                    <input type="text" id="scholarshipName" placeholder="Scholarship Name (e.g., Rhodes Scholarship)">
+                    <input type="text" id="scholarshipOrg" placeholder="Scholarship Organization/Committee">
+                    <select id="scholarshipType">
+                        <option value="Merit-based">Merit-based Scholarship</option>
+                        <option value="Need-based">Need-based Scholarship</option>
+                        <option value="Research">Research Scholarship</option>
+                        <option value="Athletic">Athletic Scholarship</option>
+                        <option value="Community Service">Community Service Scholarship</option>
+                    </select>
+                </fieldset>
+                <fieldset>
+                    <legend>3. Your Qualifications</legend>
+                    <textarea id="academicAchievements" rows="4" placeholder="Academic achievements: GPA, honors, relevant coursework..."></textarea>
+                    <textarea id="extracurricular" rows="4" placeholder="Extracurricular activities, leadership roles, community service..."></textarea>
+                    <textarea id="financialNeed" rows="3" placeholder="Optional: Financial need or circumstances (for need-based scholarships)"></textarea>
+                </fieldset>
+                <fieldset>
+                    <legend>4. Motivation</legend>
+                    <textarea id="whyDeserve" rows="4" placeholder="Why do you deserve this scholarship? Goals and aspirations..."></textarea>
+                </fieldset>
+                <fieldset>
+                    <legend>5. Generate & Refine</legend>
+                    <button type="button" class="ai-button" onclick="generateLetter()">✨ Generate Scholarship Letter</button>
+                    <textarea id="letterBody" rows="15" placeholder="The AI-generated letter will appear here. Edit it to personalize." style="margin-top: 15px;"></textarea>
+                </fieldset>
+            </form>
+        </div>
+        <div class="preview-pane">
+            <div class="preview-controls">
+                <h2>Live Preview</h2>
+                <div class="theme-switch-wrapper">
+                    <span>Classic</span>
+                    <label class="theme-switch"><input type="checkbox" id="theme-toggle"><span class="slider"></span></label>
+                    <span>Modern</span>
+                </div>
+                <button type="button" class="download-button" id="downloadPdfBtn">Download PDF</button>
+            </div>
+            <div id="scholarship-output-container">
+                <p style="text-align: center; color: #888; margin-top: 2in;">Your Scholarship Application Letter will appear here.</p>
+            </div>
+        </div>
+    </div>
+    <div class="loader-overlay" id="loader"><div class="loader"></div></div>
+    <style id="sch-styles-for-pdf">
+        body { font-family: 'Georgia', 'Times New Roman', Times, serif; color: #222; font-size: 12pt; line-height: 1.6; }
+        .sch-header { text-align: center; margin-bottom: 30px; }
+        .sch-header .name { font-size: 1.4em; font-weight: bold; }
+        .sch-header .scholarship { font-size: 1.1em; color: #555; }
+        .sch-sender-info, .sch-recipient-info { margin-bottom: 20px; line-height: 1.4; }
+        .sch-date { margin-bottom: 20px; }
+        .sch-body { text-align: justify; }
+        .sch-body p { margin-bottom: 1.2em; }
+        .sch-closing { margin-top: 30px; }
+        .modern-theme { font-family: 'Lato', -apple-system, sans-serif; }
+        .modern-theme .sch-header { text-align: left; border-top: 4px solid #1565C0; padding-top: 15px; }
+        .modern-theme .sch-header .name { font-size: 1.6em; color: #1565C0; }
+        .modern-theme .sch-body p { text-align: left; }
+    </style>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="{{ url_for('static', filename='js/download-payment.js') }}"></script>
+    <script>
+        const loader = document.getElementById('loader');
+        const form = document.getElementById('scholarshipForm');
+        const downloadBtn = document.getElementById('downloadPdfBtn');
+        const letterBodyTextarea = document.getElementById('letterBody');
+        const previewContainer = document.getElementById('scholarship-output-container');
+        const themeToggle = document.getElementById('theme-toggle');
+
+        async function fetchAIContent(prompt) {
+            loader.style.display = 'flex';
+            try {
+                const response = await fetch('/generate_ai_content', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) });
+                if (!response.ok) { const error = await response.json(); throw new Error(error.error || `HTTP error! status: ${response.status}`); }
+                const data = await response.json();
+                return data.text;
+            } catch (error) { console.error("Error:", error); alert(`AI Generation Failed: ${error.message}`); return null; }
+            finally { loader.style.display = 'none'; }
+        }
+
+        async function generateLetter() {
+            const data = {
+                applicantName: document.getElementById('applicantName').value,
+                scholarshipName: document.getElementById('scholarshipName').value,
+                scholarshipOrg: document.getElementById('scholarshipOrg').value,
+                scholarshipType: document.getElementById('scholarshipType').value,
+                academicAchievements: document.getElementById('academicAchievements').value,
+                extracurricular: document.getElementById('extracurricular').value,
+                financialNeed: document.getElementById('financialNeed').value,
+                whyDeserve: document.getElementById('whyDeserve').value,
+            };
+            if (!data.applicantName || !data.scholarshipName || !data.academicAchievements || !data.whyDeserve) {
+                alert("Please fill in Name, Scholarship Name, Academic Achievements, and Why You Deserve It."); return;
+            }
+            const prompt = `Write a compelling scholarship application letter. Applicant: ${data.applicantName}. Scholarship: ${data.scholarshipName} (${data.scholarshipType}) offered by ${data.scholarshipOrg}. Academic achievements: ${data.academicAchievements}. Extracurricular: ${data.extracurricular}. Financial need: ${data.financialNeed || 'Not specified'}. Why deserving: ${data.whyDeserve}. Instructions: Write 3-4 paragraphs. Paragraph 1: Introduction and purpose. Paragraph 2: Academic and extracurricular achievements. Paragraph 3: Why you deserve this scholarship and future goals. Paragraph 4: Closing with gratitude. Generate ONLY the letter body paragraphs - no salutation, date, or closing signature.`;
+            const result = await fetchAIContent(prompt);
+            if (result) { letterBodyTextarea.value = result; updatePreview(); }
+        }
+
+        function updatePreview() {
+            const isModern = themeToggle.checked;
+            previewContainer.classList.toggle('modern-theme', isModern);
+            const data = {
+                applicantName: document.getElementById('applicantName').value,
+                scholarshipName: document.getElementById('scholarshipName').value,
+                scholarshipOrg: document.getElementById('scholarshipOrg').value || 'The Scholarship Committee',
+                letterBody: letterBodyTextarea.value,
+            };
+            const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            const bodyHtml = data.letterBody.split('\n').filter(p => p.trim()).map(p => `<p>${p.trim()}</p>`).join('');
+            previewContainer.innerHTML = `
+                <div class="sch-sender-info"><div class="sch-header"><div class="name">${data.applicantName || 'Your Name'}</div></div></div>
+                <div class="sch-date">${today}</div>
+                <div class="sch-recipient-info"><div>${data.scholarshipOrg}</div><div>Re: Application for ${data.scholarshipName || 'Scholarship'}</div></div>
+                <div class="sch-body"><p>Dear Scholarship Committee,</p>${bodyHtml || '<p>[Your scholarship application letter will appear here...]</p>'}</div>
+                <div class="sch-closing"><p>Sincerely,</p><br><br><p>${data.applicantName || 'Your Name'}</p></div>`;
+        }
+
+        async function downloadPDF() {
+            const name = document.getElementById('applicantName').value;
+            if (!name || !letterBodyTextarea.value) { alert('Please provide your name and generate the letter first.'); return; }
+            loader.style.display = 'flex';
+            const styles = document.getElementById('sch-styles-for-pdf').innerHTML;
+            const containerClass = themeToggle.checked ? 'modern-theme' : '';
+            const fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Scholarship Letter</title><link href="https://fonts.googleapis.com/css2?family=Georgia&family=Lato:wght@400;700&display=swap" rel="stylesheet"><style>${styles}</style></head><body class="${containerClass}">${previewContainer.innerHTML}</body></html>`;
+            try {
+                const response = await fetch('/download_pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ html_content: fullHtml }) });
+                if (!response.ok) throw new Error('PDF generation failed');
+                const blob = await response.blob(); const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.style.display = 'none'; a.href = url;
+                a.download = `Scholarship_Letter_${name.replace(/[^a-z0-9]/gi, '_')}.pdf`;
+                document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); a.remove();
+            } catch (e) { console.error(e); alert(e.message || 'Could not download PDF.'); }
+            finally { loader.style.display = 'none'; }
+        }
+
+        form.addEventListener('input', updatePreview);
+        themeToggle.addEventListener('change', updatePreview);
+        downloadBtn.addEventListener('click', downloadPDF);
+        updatePreview();
+    </script>
+</body>
+</html>
+

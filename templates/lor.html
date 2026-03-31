@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI LOR Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Georgia&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- General & Layout Styles --- */
+        :root {
+            --primary-color: #0d6efd; /* Professional Blue */
+            --secondary-color: #333;
+            --background-color: #f0f2f5;
+            --editor-bg: #ffffff;
+            --preview-bg: #fafafa;
+            --border-color: #d9d9d9;
+        }
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--background-color);
+        }
+        .overleaf-container { display: flex; height: 100vh; }
+        .editor-pane, .preview-pane {
+            height: 100%; overflow-y: auto; padding: 20px; box-sizing: border-box;
+        }
+        .editor-pane { flex: 1; background-color: var(--editor-bg); border-right: 1px solid var(--border-color); }
+        .preview-pane { flex: 1.2; background-color: var(--preview-bg); }
+        .preview-controls {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;
+        }
+
+        /* --- Form Styles --- */
+        #lorForm { max-width: 600px; margin: auto; }
+        #lorForm h1 { color: var(--primary-color); text-align: center; }
+        #lorForm fieldset { border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 25px; }
+        #lorForm legend { font-size: 1.3em; font-weight: 600; color: var(--primary-color); padding: 0 10px; }
+        input[type="text"], textarea {
+            width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid var(--border-color);
+            border-radius: 5px; box-sizing: border-box; font-family: inherit; font-size: 1rem;
+        }
+        .ai-button, .download-button { padding: 10px 18px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; font-size: 1em; }
+        .ai-button { background-color: #ffc107; color: #333; display: block; width: 100%; margin-top: 10px; }
+        .download-button { background-color: #28a745; color: white; }
+
+        /* --- Theme Switch Styles --- */
+        .theme-switch-wrapper { display: flex; align-items: center; gap: 10px; }
+        .theme-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .theme-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 26px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary-color); }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        /* --- Loader Styles --- */
+        .loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .loader { border: 5px solid #f3f3f3; border-top: 5px solid var(--primary-color); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- LOR PREVIEW STYLES --- */
+        /* BASE (CLASSIC) THEME */
+        #lor-output-container {
+            max-width: 8.5in; min-height: 11in; margin: 0 auto; background: white;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1); padding: 1in; box-sizing: border-box;
+            font-family: 'Georgia', 'Times New Roman', Times, serif; color: #333; font-size: 12pt; line-height: 1.5;
+            transition: all 0.3s ease;
+        }
+        .lor-sender-info, .lor-recipient-info { margin-bottom: 30px; line-height: 1.4; }
+        .lor-recommender-name { font-weight: bold; }
+        .lor-date { margin-bottom: 30px; }
+        .lor-body { margin-top: 20px; text-align: justify; }
+        .lor-body p { margin-bottom: 1em; }
+        .lor-closing { margin-top: 30px; }
+
+        /* MODERN (SHINY) THEME OVERRIDES */
+        #lor-output-container.modern-theme {
+            font-family: 'Lato', -apple-system, sans-serif;
+            font-size: 11pt;
+            color: #212529;
+        }
+        .modern-theme .lor-header {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .modern-theme .lor-recommender-name {
+            font-size: 1.6em;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        .modern-theme .lor-recommender-title {
+            font-size: 1.1em;
+            color: #555;
+        }
+        .modern-theme .lor-body p {
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overleaf-container">
+        <!-- Editor Pane -->
+        <div class="editor-pane">
+            <form id="lorForm">
+                <h1>Letter of Recommendation Generator</h1>
+                <fieldset>
+                    <legend>1. Recommender Details (You)</legend>
+                    <input type="text" id="recommenderName" placeholder="Your Full Name">
+                    <input type="text" id="recommenderTitle" placeholder="Your Title (e.g., Professor of Physics, Senior Software Engineer)">
+                    <input type="text" id="recommenderInstitution" placeholder="Your University/Company">
+                </fieldset>
+
+                <fieldset>
+                    <legend>2. Applicant & Application Details</legend>
+                    <input type="text" id="applicantName" placeholder="Applicant's Full Name">
+                    <input type="text" id="targetProgram" placeholder="Target Program/Job Title (e.g., PhD in Neuroscience)">
+                    <input type="text" id="targetInstitution" placeholder="Target University/Company">
+                </fieldset>
+
+                <fieldset>
+                    <legend>3. Your Relationship with Applicant</legend>
+                    <textarea id="relationshipContext" rows="4" placeholder="How do you know the applicant? In what capacity? For how long? (e.g., 'I was Jane's thesis advisor for two years...')"></textarea>
+                </fieldset>
+
+                <fieldset>
+                    <legend>4. Applicant's Strengths & Anecdotes</legend>
+                    <textarea id="keyStrengths" rows="4" placeholder="List 3-4 key strengths (e.g., intellectual curiosity, leadership, resilience, technical skill)"></textarea>
+                    <textarea id="specificExamples" rows="6" placeholder="CRITICAL: Provide 1-2 specific stories that DEMONSTRATE these strengths. (e.g., 'During the X project, Jane independently debugged a critical issue that...')"></textarea>
+                    <input type="text" id="overallAssessment" placeholder="Overall assessment (e.g., 'Top 5% of students I've taught')">
+                </fieldset>
+
+                <fieldset>
+                    <legend>5. Generate & Refine</legend>
+                    <button type="button" class="ai-button" onclick="generateLOR()">✨ Generate LOR with AI</button>
+                    <textarea id="lorBody" rows="15" placeholder="The AI-generated letter body will appear here. Please review and edit it carefully for accuracy and tone." style="margin-top: 15px;"></textarea>
+                </fieldset>
+            </form>
+        </div>
+
+        <!-- Preview Pane -->
+        <div class="preview-pane">
+            <div class="preview-controls">
+                <h2>Live Preview</h2>
+                <div class="theme-switch-wrapper">
+                    <span>Classic</span>
+                    <label class="theme-switch">
+                        <input type="checkbox" id="theme-toggle">
+                        <span class="slider"></span>
+                    </label>
+                    <span>Modern</span>
+                </div>
+                <button type="button" class="download-button" id="downloadPdfBtn">Download PDF</button>
+            </div>
+            <div id="lor-output-container">
+                <p style="text-align: center; color: #888; margin-top: 2in;">Your Letter of Recommendation will appear here.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loader -->
+    <div class="loader-overlay" id="loader"><div class="loader"></div></div>
+
+    <!-- Hidden styles for the PDF -->
+    <style id="lor-styles-for-pdf">
+        /* BASE (CLASSIC) THEME */
+        body { font-family: 'Georgia', 'Times New Roman', Times, serif; color: #333; font-size: 12pt; line-height: 1.5; }
+        .lor-sender-info, .lor-recipient-info { margin-bottom: 30px; line-height: 1.4; }
+        .lor-recommender-name { font-weight: bold; }
+        .lor-date { margin-bottom: 30px; }
+        .lor-body { margin-top: 20px; text-align: justify; }
+        .lor-body p { margin-bottom: 1em; }
+        .lor-closing { margin-top: 30px; }
+
+        /* MODERN (SHINY) THEME OVERRIDES */
+        .modern-theme { font-family: 'Lato', -apple-system, sans-serif; font-size: 11pt; color: #212529; }
+        .modern-theme .lor-header { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; }
+        .modern-theme .lor-recommender-name { font-size: 1.6em; font-weight: 700; color: #0d6efd; }
+        .modern-theme .lor-recommender-title { font-size: 1.1em; color: #555; }
+        .modern-theme .lor-body p { text-align: left; }
+    </style>
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="{{ url_for('static', filename='js/download-payment.js') }}"></script>
+    <script>
+        // --- DOM Element References ---
+        const loader = document.getElementById('loader');
+        const form = document.getElementById('lorForm');
+        const downloadBtn = document.getElementById('downloadPdfBtn');
+        const lorBodyTextarea = document.getElementById('lorBody');
+        const previewContainer = document.getElementById('lor-output-container');
+        const themeToggle = document.getElementById('theme-toggle');
+
+        // --- Core Functions ---
+        async function fetchAIContent(prompt) {
+            loader.style.display = 'flex';
+            try {
+                const response = await fetch('/generate_ai_content', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || `HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                return data.text;
+            } catch (error) {
+                console.error("Error fetching AI content:", error);
+                alert(`AI Generation Failed: ${error.message}`);
+                return null;
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        async function generateLOR() {
+            const data = {
+                applicantName: document.getElementById('applicantName').value,
+                recommenderName: document.getElementById('recommenderName').value,
+                targetProgram: document.getElementById('targetProgram').value,
+                relationshipContext: document.getElementById('relationshipContext').value,
+                keyStrengths: document.getElementById('keyStrengths').value,
+                specificExamples: document.getElementById('specificExamples').value,
+                overallAssessment: document.getElementById('overallAssessment').value,
+            };
+
+            if (!data.applicantName || !data.recommenderName || !data.relationshipContext || !data.specificExamples) {
+                alert("Please fill in all required fields (Applicant Name, Your Name, Relationship, and Specific Examples).");
+                return;
+            }
+
+            const prompt = `
+                Write a strong and persuasive Letter of Recommendation.
+
+                **Context:**
+                - Recommender: ${data.recommenderName}
+                - Applicant: ${data.applicantName}
+                - Applying for: ${data.targetProgram}
+                - Recommender's relationship to applicant: ${data.relationshipContext}
+
+                **Core Content:**
+                - Applicant's key strengths: ${data.keyStrengths}
+                - **Crucial Anecdotes (use these to build the body paragraphs):** ${data.specificExamples}
+                - Recommender's overall summary assessment: ${data.overallAssessment}
+
+                **Instructions:**
+                1.  **Structure:** Create a standard LOR flow:
+                    a.  **Introduction:** State who you are, who you are recommending, for what program, and in what capacity you know them.
+                    b.  **Body Paragraphs (2-3):** This is the most important part. Dedicate each paragraph to a key strength, and use the specific anecdotes provided to *show*, not just *tell*.
+                    c.  **Comparative Assessment:** If provided, weave in the overall assessment (e.g., 'In my 10 years of teaching, Jane ranks in the top 5%...').
+                    d.  **Conclusion:** A strong, confident closing statement summarizing your endorsement.
+                2.  **Tone:** Formal, confident, and genuinely supportive.
+                3.  **Formatting:** Generate ONLY the letter body. Do NOT include any address blocks, dates, or salutations (like 'Dear Admissions Committee,'). The output should start with the first paragraph of the letter.
+            `;
+
+            const result = await fetchAIContent(prompt);
+            if (result) {
+                lorBodyTextarea.value = result;
+                updatePreview();
+            }
+        }
+
+        function updatePreview() {
+            const isModern = themeToggle.checked;
+            previewContainer.classList.toggle('modern-theme', isModern);
+
+            const data = {
+                recommenderName: document.getElementById('recommenderName').value,
+                recommenderTitle: document.getElementById('recommenderTitle').value,
+                recommenderInstitution: document.getElementById('recommenderInstitution').value,
+                applicantName: document.getElementById('applicantName').value,
+                targetInstitution: document.getElementById('targetInstitution').value,
+                lorBody: lorBodyTextarea.value,
+            };
+
+            const today = new Date();
+            const dateString = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            const bodyWithParagraphs = data.lorBody.split('\n').filter(p => p.trim() !== '').map(p => `<p>${p.trim()}</p>`).join('');
+
+            let html = '';
+            if (isModern) {
+                html = `
+                    <div class="lor-header">
+                        <div class="lor-recommender-name">${data.recommenderName || 'Recommender Name'}</div>
+                        <div class="lor-recommender-title">${data.recommenderTitle || 'Recommender Title'}</div>
+                        <div>${data.recommenderInstitution || 'Institution'}</div>
+                    </div>
+                `;
+            } else { // Classic Theme
+                html = `
+                    <div class="lor-sender-info">
+                        <div class="lor-recommender-name">${data.recommenderName || 'Recommender Name'}</div>
+                        <div>${data.recommenderTitle || 'Recommender Title'}</div>
+                        <div>${data.recommenderInstitution || 'Institution'}</div>
+                    </div>
+                `;
+            }
+
+            // Common parts for both themes
+            html += `
+                <div class="lor-date">${dateString}</div>
+                <div class="lor-recipient-info">
+                    <div>Admissions Committee</div>
+                    <div>${data.targetInstitution || 'Target Institution'}</div>
+                </div>
+                <div class="lor-salutation">Dear Admissions Committee,</div>
+                <div class="lor-body">${bodyWithParagraphs || '<p>[Your letter content will appear here...]</p>'}</div>
+                <div class="lor-closing">
+                    <p>Sincerely,</p><br>
+                    <p>${data.recommenderName || 'Recommender Name'}</p>
+                    <p>${data.recommenderTitle || 'Recommender Title'}</p>
+                </div>
+            `;
+
+            previewContainer.innerHTML = html;
+        }
+
+        async function downloadPDF() {
+            const applicantName = document.getElementById('applicantName').value;
+            const recommenderName = document.getElementById('recommenderName').value;
+            if (!applicantName || !recommenderName || !lorBodyTextarea.value) {
+                alert('Please fill in applicant/recommender names and generate content before downloading.');
+                return;
+            }
+
+            loader.style.display = 'flex';
+            const contentToPrint = previewContainer.innerHTML;
+            const styles = document.getElementById('lor-styles-for-pdf').innerHTML;
+            const isModern = themeToggle.checked;
+            const containerClass = isModern ? 'modern-theme' : '';
+
+            const fullHtmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>LOR for ${applicantName}</title><link href="https://fonts.googleapis.com/css2?family=Georgia&family=Lato:wght@400;700&display=swap" rel="stylesheet"><style>${styles}</style></head><body class="${containerClass}">${contentToPrint}</body></html>`;
+
+            try {
+                const response = await fetch('/download_pdf', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ html_content: fullHtmlContent })
+                });
+                if (!response.ok) throw new Error(`PDF generation failed: ${response.statusText}`);
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                const safeAppName = applicantName.replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_');
+                a.download = `LOR_for_${safeAppName || 'applicant'}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            } catch (error) {
+                console.error('Error downloading PDF:', error);
+                alert(error.message || 'Could not download PDF. See console for details.');
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        // --- Event Listeners ---
+        form.addEventListener('input', updatePreview);
+        themeToggle.addEventListener('change', updatePreview);
+        downloadBtn.addEventListener('click', downloadPDF);
+
+        // --- Initial Load ---
+        updatePreview();
+    </script>
+</body>
+</html>
+

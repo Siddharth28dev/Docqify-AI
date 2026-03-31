@@ -1,0 +1,1169 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocqifyAdmin</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #f6f2ea;
+            --panel: #ffffff;
+            --panel-soft: #fbf7f1;
+            --text: #18263f;
+            --muted: #6d7890;
+            --line: #dde4ee;
+            --brand: #0f5bd8;
+            --teal: #0e8f7d;
+            --amber: #dd8a1f;
+            --danger: #d24e5b;
+            --success: #1a9d67;
+            --shadow: 0 24px 50px rgba(24, 38, 63, 0.08);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(15, 91, 216, 0.08), transparent 26%),
+                radial-gradient(circle at top right, rgba(221, 138, 31, 0.08), transparent 22%),
+                var(--bg);
+        }
+
+        .app-shell {
+            display: grid;
+            grid-template-columns: 280px minmax(0, 1fr);
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            position: sticky;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+            height: 100vh;
+            padding: 28px 20px;
+            background: linear-gradient(180deg, #0f1d35 0%, #12264a 55%, #16315d 100%);
+            color: #f3f7ff;
+            border-right: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 1.95rem;
+            letter-spacing: -0.03em;
+        }
+
+        .brand-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 7px 12px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(243, 247, 255, 0.75);
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .status-stack {
+            display: grid;
+            gap: 12px;
+        }
+
+        .status-card {
+            padding: 14px 16px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .status-label {
+            display: block;
+            margin-bottom: 8px;
+            color: rgba(243, 247, 255, 0.68);
+            font-size: 0.76rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .status-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            line-height: 1.35;
+        }
+
+        .sidebar-nav {
+            display: grid;
+            gap: 10px;
+        }
+
+        .sidebar-link {
+            width: 100%;
+            padding: 13px 14px;
+            border: 0;
+            border-radius: 16px;
+            background: transparent;
+            color: #f3f7ff;
+            text-align: left;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        .sidebar-link:hover,
+        .sidebar-link.active {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateX(2px);
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .btn {
+            appearance: none;
+            border: 0;
+            border-radius: 16px;
+            padding: 12px 16px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .btn:hover { transform: translateY(-1px); }
+        .btn-primary { background: linear-gradient(135deg, var(--brand), #3f84f0); color: #fff; }
+        .btn-secondary { background: #eef4ff; color: var(--brand); }
+        .btn-danger { background: linear-gradient(135deg, #c6404f, #e06774); color: #fff; }
+        .btn-success { background: linear-gradient(135deg, #148f62, #2db982); color: #fff; }
+        .btn-ghost { background: rgba(255, 255, 255, 0.12); color: #fff; }
+
+        .main { padding: 28px; }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 18px;
+            margin-bottom: 20px;
+        }
+
+        .topbar h2 {
+            margin: 0;
+            font-size: 2rem;
+            letter-spacing: -0.03em;
+        }
+
+        .topbar p {
+            margin: 10px 0 0;
+            color: var(--muted);
+            max-width: 720px;
+            line-height: 1.6;
+        }
+
+        .chip-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .chip {
+            padding: 10px 12px;
+            border-radius: 999px;
+            background: var(--panel);
+            border: 1px solid var(--line);
+            box-shadow: var(--shadow);
+            color: var(--muted);
+            font-size: 0.84rem;
+            font-weight: 700;
+        }
+
+        .panel-view { display: none; }
+        .panel-view.active { display: block; }
+
+        .section-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .section-head h3 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .section-head p {
+            margin: 6px 0 0;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+
+        .grid { display: grid; gap: 18px; }
+        .kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        .two-col { grid-template-columns: 1.2fr 0.95fr; }
+
+        .panel {
+            padding: 22px;
+            border-radius: 24px;
+            background: var(--panel);
+            border: 1px solid rgba(221, 228, 238, 0.9);
+            box-shadow: var(--shadow);
+        }
+        .metric-card {
+            position: relative;
+            overflow: hidden;
+            min-height: 152px;
+        }
+
+        .metric-card::after {
+            content: "";
+            position: absolute;
+            right: -18px;
+            top: -18px;
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(15, 91, 216, 0.12), rgba(221, 138, 31, 0.1));
+        }
+
+        .metric-label {
+            position: relative;
+            z-index: 1;
+            color: var(--muted);
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .metric-value {
+            position: relative;
+            z-index: 1;
+            margin-top: 12px;
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            color: var(--brand);
+        }
+
+        .metric-help {
+            position: relative;
+            z-index: 1;
+            margin-top: 10px;
+            color: var(--muted);
+            line-height: 1.5;
+            font-size: 0.92rem;
+        }
+
+        .metric-accent-teal .metric-value { color: var(--teal); }
+        .metric-accent-amber .metric-value { color: var(--amber); }
+        .metric-accent-danger .metric-value { color: var(--danger); }
+
+        .chart-panel canvas {
+            width: 100% !important;
+            height: 320px !important;
+        }
+
+        .mini-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        .mini-stat {
+            padding: 15px;
+            border-radius: 18px;
+            background: var(--panel-soft);
+            border: 1px solid var(--line);
+        }
+
+        .mini-stat .label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--muted);
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .mini-stat .value {
+            font-size: 1.28rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+        }
+
+        form { display: grid; gap: 14px; }
+        .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+        .field { display: grid; gap: 7px; }
+        label { font-size: 0.92rem; font-weight: 700; }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 15px;
+            border: 1px solid var(--line);
+            background: #fff;
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+
+        .helper {
+            color: var(--muted);
+            font-size: 0.84rem;
+            line-height: 1.45;
+        }
+
+        .key-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: var(--panel-soft);
+            border: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+        }
+
+        table { width: 100%; border-collapse: collapse; background: #fff; }
+        th, td {
+            padding: 13px 14px;
+            border-bottom: 1px solid var(--line);
+            text-align: left;
+            font-size: 0.92rem;
+            vertical-align: top;
+        }
+        th {
+            color: var(--muted);
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        tr:last-child td { border-bottom: 0; }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: capitalize;
+        }
+
+        .pill.success { background: rgba(26, 157, 103, 0.12); color: var(--success); }
+        .pill.blocked,
+        .pill.failed { background: rgba(210, 78, 91, 0.12); color: var(--danger); }
+        .pill.created { background: rgba(221, 138, 31, 0.14); color: #a35f05; }
+
+        .empty {
+            padding: 18px;
+            border-radius: 18px;
+            border: 1px dashed var(--line);
+            background: var(--panel-soft);
+            color: var(--muted);
+        }
+
+        .control-strip {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+            padding: 18px 20px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #f8fbff, #fff7f0);
+            border: 1px solid var(--line);
+            margin-bottom: 18px;
+        }
+
+        .control-strip strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 1rem;
+        }
+
+        .toast {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            min-width: 260px;
+            max-width: 420px;
+            padding: 14px 16px;
+            border-radius: 16px;
+            color: #fff;
+            background: #172340;
+            box-shadow: var(--shadow);
+            opacity: 0;
+            transform: translateY(12px);
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            z-index: 1000;
+        }
+
+        .toast.show { opacity: 1; transform: translateY(0); }
+
+        @media (max-width: 1200px) {
+            .app-shell { grid-template-columns: 1fr; }
+            .sidebar { position: static; height: auto; }
+            .kpi-grid, .two-col, .field-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 760px) {
+            .main { padding: 18px; }
+            .topbar { flex-direction: column; }
+            .chip-row, .sidebar-footer { width: 100%; }
+            .sidebar-footer { grid-template-columns: 1fr 1fr; }
+            .mini-grid { grid-template-columns: 1fr; }
+            .control-strip { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="brand">
+                <span class="brand-tag">Admin Workspace</span>
+                <h1>Docqify</h1>
+            </div>
+
+            <div class="status-stack">
+                <div class="status-card">
+                    <span class="status-label">Active AI Stack</span>
+                    <div class="status-value" id="sidebarProvider">{{ settings.provider|upper }} / {{ settings.model }}</div>
+                </div>
+                <div class="status-card">
+                    <span class="status-label">Payment Status</span>
+                    <div class="status-value" id="sidebarPayment">{{ "Ready" if payment_ready_flag else "Needs Setup" }}</div>
+                </div>
+                <div class="status-card">
+                    <span class="status-label">Default Price</span>
+                    <div class="status-value" id="sidebarPrice">INR {{ settings.document_price }}</div>
+                </div>
+            </div>
+
+            <div class="sidebar-nav">
+                <button class="sidebar-link active" type="button" data-panel="analytics" data-title="Analytics" data-subtitle="Daily, monthly, and yearly visibility for downloads, tokens, and revenue.">Analytics</button>
+                <button class="sidebar-link" type="button" data-panel="api-keys" data-title="API Keys" data-subtitle="Switch provider, choose the model, and keep your Gemini and GPT credentials ready.">API Keys</button>
+                <button class="sidebar-link" type="button" data-panel="payments" data-title="Payment Creds" data-subtitle="Manage Razorpay credentials and the default amount used when a document has no custom price.">Payment Creds</button>
+                <button class="sidebar-link" type="button" data-panel="document-rules" data-title="Document Rules" data-subtitle="Set a separate price and AI token limit for each document type.">Document Rules</button>
+                <button class="sidebar-link" type="button" data-panel="api-control" data-title="API Control" data-subtitle="Track AI activity and stop or resume internal API usage whenever needed.">API Control</button>
+            </div>
+
+            <div class="sidebar-footer">
+                <a class="btn btn-ghost" href="/admin/logout">Logout</a>
+                <button class="btn btn-secondary" type="button" id="refreshBtn">Refresh</button>
+            </div>
+        </aside>
+
+        <main class="main">
+            <section class="topbar">
+                <div>
+                    <h2 id="panelTitle">Analytics</h2>
+                    <p id="panelSubtitle">Daily, monthly, and yearly visibility for downloads, tokens, and revenue.</p>
+                </div>
+                <div class="chip-row">
+                    <div class="chip">Visitors: <strong id="chipVisitors">{{ stats.total_logged_in }}</strong></div>
+                    <div class="chip">Downloads: <strong id="chipDownloads">{{ stats.total_downloads }}</strong></div>
+                    <div class="chip">Tokens: <strong id="chipTokens">{{ stats.ai_usage.total_tokens_used }}</strong></div>
+                    <div class="chip">Revenue: <strong id="chipRevenue">INR {{ "%.2f"|format(stats.payments.total_revenue) }}</strong></div>
+                </div>
+            </section>
+
+            <section class="panel-view active" id="analytics">
+                <div class="grid kpi-grid">
+                    <div class="panel metric-card">
+                        <div class="metric-label">Downloads Today</div>
+                        <div class="metric-value" id="downloadsToday">{{ stats.downloads_today }}</div>
+                        <div class="metric-help">Documents downloaded today.</div>
+                    </div>
+                    <div class="panel metric-card metric-accent-teal">
+                        <div class="metric-label">Tokens This Month</div>
+                        <div class="metric-value" id="tokensMonth">{{ stats.tokens_this_month }}</div>
+                        <div class="metric-help">Successful AI tokens used this month.</div>
+                    </div>
+                    <div class="panel metric-card metric-accent-amber">
+                        <div class="metric-label">Revenue This Week</div>
+                        <div class="metric-value" id="revenueWeek">INR {{ "%.2f"|format(stats.revenue_this_week) }}</div>
+                        <div class="metric-help">Revenue from verified payments.</div>
+                    </div>
+                    <div class="panel metric-card metric-accent-danger">
+                        <div class="metric-label">Payments Completed</div>
+                        <div class="metric-value" id="paymentsSuccess">{{ stats.payments.successful_payments }}</div>
+                        <div class="metric-help">Successful paid download orders.</div>
+                    </div>
+                </div>
+                <div class="grid two-col" style="margin-top: 18px;">
+                    <div class="panel chart-panel">
+                        <div class="section-head">
+                            <div>
+                                <h3>Per Day Performance</h3>
+                                <p>Last 14 days of downloads, token usage, and revenue.</p>
+                            </div>
+                        </div>
+                        <canvas id="dailyChart"></canvas>
+                        <div class="mini-grid">
+                            <div class="mini-stat">
+                                <span class="label">Month Downloads</span>
+                                <div class="value" id="downloadsMonth">{{ stats.downloads_this_month }}</div>
+                            </div>
+                            <div class="mini-stat">
+                                <span class="label">Year Downloads</span>
+                                <div class="value" id="downloadsYear">{{ stats.downloads_this_year }}</div>
+                            </div>
+                            <div class="mini-stat">
+                                <span class="label">Revenue Today</span>
+                                <div class="value" id="revenueToday">INR {{ "%.2f"|format(stats.revenue_today) }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="section-head">
+                            <div>
+                                <h3>Top Documents</h3>
+                                <p>Most downloaded document types on the platform.</p>
+                            </div>
+                        </div>
+                        <div id="topDocsWrap"></div>
+                    </div>
+                </div>
+
+                <div class="grid two-col" style="margin-top: 18px;">
+                    <div class="panel chart-panel">
+                        <div class="section-head">
+                            <div>
+                                <h3>Monthly Trend</h3>
+                                <p>12-month view of usage and revenue.</p>
+                            </div>
+                        </div>
+                        <canvas id="monthlyChart"></canvas>
+                    </div>
+
+                    <div class="panel chart-panel">
+                        <div class="section-head">
+                            <div>
+                                <h3>Yearly Trend</h3>
+                                <p>Five-year snapshot for long-term visibility.</p>
+                            </div>
+                        </div>
+                        <canvas id="yearlyChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel-view" id="api-keys">
+                <div class="grid two-col">
+                    <div class="panel">
+                        <div class="section-head">
+                            <div>
+                                <h3>Provider Setup</h3>
+                                <p>Choose which AI stack runs the internal generation buttons.</p>
+                            </div>
+                        </div>
+
+                        <form id="apiSettingsForm">
+                            <div class="field-grid">
+                                <div class="field">
+                                    <label for="provider">Active Provider</label>
+                                    <select id="provider" name="provider">
+                                        <option value="gemini" {% if settings.provider == "gemini" %}selected{% endif %}>Gemini</option>
+                                        <option value="openai" {% if settings.provider == "openai" %}selected{% endif %}>GPT / OpenAI</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="model">Model</label>
+                                    <select id="model" name="model"></select>
+                                </div>
+                            </div>
+
+                            <div class="field">
+                                <label for="api_key">Active Provider Key</label>
+                                <input id="api_key" name="api_key" type="text" placeholder="Paste the key for the selected provider">
+                                <div class="helper">Only the provider selected above will be updated by this field.</div>
+                            </div>
+
+                            <div class="field-grid">
+                                <div class="field">
+                                    <label for="gemini_api_key">Stored Gemini Key</label>
+                                    <input id="gemini_api_key" name="gemini_api_key" type="text" placeholder="AIza...">
+                                    <div class="helper">Current: {{ masked_gemini_key }}</div>
+                                </div>
+                                <div class="field">
+                                    <label for="openai_api_key">Stored GPT / OpenAI Key</label>
+                                    <input id="openai_api_key" name="openai_api_key" type="text" placeholder="sk-...">
+                                    <div class="helper">Current: {{ masked_openai_key }}</div>
+                                </div>
+                            </div>
+
+                            <div class="toolbar">
+                                <button class="btn btn-primary" type="submit">Save API Settings</button>
+                                <span class="key-badge">Active key: {{ masked_active_key }}</span>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="panel">
+                        <div class="section-head">
+                            <div>
+                                <h3>Usage Mix</h3>
+                                <p>Provider and model activity across your internal AI tools.</p>
+                            </div>
+                        </div>
+                        <div id="providerUsageWrap"></div>
+                        <div style="height: 16px;"></div>
+                        <div id="modelUsageWrap"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel-view" id="payments">
+                <div class="grid two-col">
+                    <div class="panel">
+                        <div class="section-head">
+                            <div>
+                                <h3>Razorpay Setup</h3>
+                                <p>Configure the default billing settings used before document downloads.</p>
+                            </div>
+                        </div>
+
+                        <form id="paymentSettingsForm">
+                            <div class="field-grid">
+                                <div class="field">
+                                    <label for="razorpay_key_id">Razorpay Key ID</label>
+                                    <input id="razorpay_key_id" name="razorpay_key_id" type="text" placeholder="rzp_live_..." value="{{ settings.razorpay_key_id }}">
+                                    <div class="helper">Current: {{ masked_razorpay_key_id }}</div>
+                                </div>
+                                <div class="field">
+                                    <label for="razorpay_key_secret">Razorpay Secret</label>
+                                    <input id="razorpay_key_secret" name="razorpay_key_secret" type="text" placeholder="Paste Razorpay secret" value="{{ settings.razorpay_key_secret }}">
+                                    <div class="helper">Current: {{ masked_razorpay_key_secret }}</div>
+                                </div>
+                            </div>
+
+                            <div class="field-grid">
+                                <div class="field">
+                                    <label for="document_price">Default Document Price</label>
+                                    <input id="document_price" name="document_price" type="number" min="0" step="0.01" value="{{ settings.document_price }}">
+                                    <div class="helper">Use 0.00 for free downloads or 1.00 and above for paid downloads.</div>
+                                </div>
+                                <div class="field">
+                                    <label>Currency</label>
+                                    <input type="text" value="INR" disabled>
+                                    <div class="helper">All payment amounts are processed in INR.</div>
+                                </div>
+                            </div>
+
+                            <div class="toolbar">
+                                <button class="btn btn-primary" type="submit">Save Payment Settings</button>
+                                <span class="key-badge" id="paymentSetupBadge">{{ "Razorpay ready" if payment_ready_flag else "Awaiting setup" }}</span>
+                            </div>
+                            <div class="helper" id="paymentBlockedReason">
+                                {% if payment_ready_flag %}
+                                    Paid downloads are active for the configured documents.
+                                {% else %}
+                                    Complete the Razorpay setup to enable paid downloads.
+                                {% endif %}
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="panel">
+                        <div class="section-head">
+                            <div>
+                                <h3>Revenue & Payments</h3>
+                                <p>Track revenue and recent payment activity from the same screen.</p>
+                            </div>
+                        </div>
+                        <div class="mini-grid">
+                            <div class="mini-stat">
+                                <span class="label">Revenue Month</span>
+                                <div class="value" id="revenueMonth">INR {{ "%.2f"|format(stats.revenue_this_month) }}</div>
+                            </div>
+                            <div class="mini-stat">
+                                <span class="label">Revenue Year</span>
+                                <div class="value" id="revenueYear">INR {{ "%.2f"|format(stats.revenue_this_year) }}</div>
+                            </div>
+                            <div class="mini-stat">
+                                <span class="label">Total Orders</span>
+                                <div class="value" id="totalOrders">{{ stats.payments.total_orders }}</div>
+                            </div>
+                        </div>
+                        <div style="height: 16px;"></div>
+                        <div id="recentPaymentsWrap"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel-view" id="document-rules">
+                <div class="panel">
+                    <div class="section-head">
+                        <div>
+                            <h3>Document Pricing & Token Limits</h3>
+                            <p>Use lighter token limits for short drafts and larger limits for heavy AI-assisted documents.</p>
+                        </div>
+                    </div>
+
+                    <form id="documentRulesForm">
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Document</th>
+                                        <th>Path</th>
+                                        <th>Price</th>
+                                        <th>Token Limit</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="documentRulesBody">
+                                    {% for item in document_rules_view %}
+                                    <tr data-doc-path="{{ item.path }}">
+                                        <td><strong>{{ item.name }}</strong></td>
+                                        <td>{{ item.path }}</td>
+                                        <td><input type="number" min="0" step="0.01" class="doc-rule-price" value="{{ item.price }}"></td>
+                                        <td><input type="number" min="1" step="1" class="doc-rule-tokens" value="{{ item.token_limit }}"></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="toolbar" style="margin-top: 14px;">
+                            <button class="btn btn-primary" type="submit">Save Document Rules</button>
+                            <span class="key-badge">0.00 = free, 1.00+ = paid</span>
+                        </div>
+                        <div class="helper" id="documentRulesHint">Each document can now have its own price and internal AI token budget.</div>
+                    </form>
+                </div>
+            </section>
+
+            <section class="panel-view" id="api-control">
+                <div class="control-strip">
+                    <div>
+                        <strong>AI Usage Control</strong>
+                        <span class="helper">Pause or resume the internal AI enhance buttons across all document pages.</span>
+                    </div>
+                    <div class="toolbar">
+                        {% if ai_usage_enabled %}
+                            <button class="btn btn-danger" type="button" id="stopAiBtn">Stop API Usage</button>
+                        {% else %}
+                            <button class="btn btn-success" type="button" id="resumeAiBtn">Resume API Usage</button>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="grid kpi-grid">
+                    <div class="panel metric-card">
+                        <div class="metric-label">Total AI Calls</div>
+                        <div class="metric-value" id="aiTotalCalls">{{ stats.ai_usage.total_clicks }}</div>
+                        <div class="metric-help">Every attempt to use internal AI generation.</div>
+                    </div>
+                    <div class="panel metric-card metric-accent-teal">
+                        <div class="metric-label">Successful Calls</div>
+                        <div class="metric-value" id="aiSuccessCalls">{{ stats.ai_usage.successful_calls }}</div>
+                        <div class="metric-help">Requests completed successfully.</div>
+                    </div>
+                    <div class="panel metric-card metric-accent-amber">
+                        <div class="metric-label">Blocked Calls</div>
+                        <div class="metric-value" id="aiBlockedCalls">{{ stats.ai_usage.blocked_calls }}</div>
+                        <div class="metric-help">Calls blocked by admin control.</div>
+                    </div>
+                    <div class="panel metric-card metric-accent-danger">
+                        <div class="metric-label">Failed Calls</div>
+                        <div class="metric-value" id="aiFailedCalls">{{ stats.ai_usage.failed_calls }}</div>
+                        <div class="metric-help">Requests that failed upstream.</div>
+                    </div>
+                </div>
+
+                <div class="grid two-col" style="margin-top: 18px;">
+                    <div class="panel">
+                        <div class="section-head">
+                            <div>
+                                <h3>Recent API Events</h3>
+                                <p>Latest provider and model attempts with status and token details.</p>
+                            </div>
+                        </div>
+                        <div id="recentApiWrap"></div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="section-head">
+                            <div>
+                                <h3>Platform Snapshot</h3>
+                                <p>Quick numbers for operational decisions.</p>
+                            </div>
+                        </div>
+                        <div class="mini-grid">
+                            <div class="mini-stat">
+                                <span class="label">Tokens Today</span>
+                                <div class="value" id="tokensToday">{{ stats.tokens_today }}</div>
+                            </div>
+                            <div class="mini-stat">
+                                <span class="label">Tokens Year</span>
+                                <div class="value" id="tokensYear">{{ stats.tokens_this_year }}</div>
+                            </div>
+                            <div class="mini-stat">
+                                <span class="label">Price / Doc</span>
+                                <div class="value" id="docPriceCard">INR {{ settings.document_price }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const availableModels = {{ available_models | tojson }};
+        const state = {
+            stats: {{ stats | tojson }},
+            settings: {{ settings | tojson }},
+            charts: {}
+        };
+
+        const providerSelect = document.getElementById("provider");
+        const modelSelect = document.getElementById("model");
+        const toast = document.getElementById("toast");
+        const panelTitle = document.getElementById("panelTitle");
+        const panelSubtitle = document.getElementById("panelSubtitle");
+        const navButtons = Array.from(document.querySelectorAll(".sidebar-link[data-panel]"));
+        const panelViews = Array.from(document.querySelectorAll(".panel-view"));
+
+        function showToast(message, isError = false) {
+            toast.textContent = message;
+            toast.style.background = isError ? "#be234d" : "#172340";
+            toast.classList.add("show");
+            window.clearTimeout(showToast._timer);
+            showToast._timer = window.setTimeout(() => toast.classList.remove("show"), 2400);
+        }
+
+        function formatCurrency(value) {
+            return new Intl.NumberFormat("en-IN", {
+                style: "currency",
+                currency: "INR",
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(Number(value || 0));
+        }
+
+        function formatDate(value) {
+            if (!value) return "-";
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return value;
+            return date.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+        }
+
+        function buildStatusPill(status) {
+            const safe = (status || "unknown").toLowerCase();
+            return `<span class="pill ${safe}">${safe}</span>`;
+        }
+
+        function populateModelOptions(selectedProvider, selectedModel) {
+            const models = availableModels[selectedProvider] || [];
+            modelSelect.innerHTML = models.map((model) => `<option value="${model}" ${model === selectedModel ? "selected" : ""}>${model}</option>`).join("");
+        }
+
+        function renderSimpleTable(headers, rows, emptyMessage) {
+            if (!rows.length) return `<div class="empty">${emptyMessage}</div>`;
+            return `
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr>${headers.map((header) => `<th>${header}</th>`).join("")}</tr></thead>
+                        <tbody>${rows.join("")}</tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function renderTopDocs(stats) {
+            const rows = (stats.top_documents || []).map((item) => `<tr><td>${item.doc_name}</td><td>${item.downloads}</td><td>${formatCurrency(item.revenue || 0)}</td></tr>`);
+            document.getElementById("topDocsWrap").innerHTML = renderSimpleTable(["Document", "Downloads", "Revenue"], rows, "No document downloads yet.");
+        }
+
+        function renderProviderUsage(stats) {
+            const providerRows = (stats.ai_usage.provider_usage || []).map((item) => `<tr><td>${item.provider}</td><td>${item.calls}</td><td>${item.tokens}</td></tr>`);
+            document.getElementById("providerUsageWrap").innerHTML = renderSimpleTable(["Provider", "Calls", "Tokens"], providerRows, "No provider usage captured yet.");
+
+            const modelRows = (stats.ai_usage.model_usage || []).map((item) => `<tr><td>${item.model}</td><td>${item.provider}</td><td>${item.calls}</td><td>${item.tokens}</td></tr>`);
+            document.getElementById("modelUsageWrap").innerHTML = renderSimpleTable(["Model", "Provider", "Calls", "Tokens"], modelRows, "No model-level activity yet.");
+        }
+
+        function renderRecentPayments(stats) {
+            const rows = (stats.payments.recent || []).map((item) => `<tr><td>${item.doc_name}</td><td>${formatCurrency(item.amount)}</td><td>${buildStatusPill(item.status)}</td><td>${formatDate(item.verified_at || item.created_at)}</td></tr>`);
+            document.getElementById("recentPaymentsWrap").innerHTML = renderSimpleTable(["Document", "Amount", "Status", "Updated"], rows, "No payment activity yet.");
+        }
+
+        function renderRecentApi(stats) {
+            const rows = (stats.ai_usage.recent_events || []).map((item) => `<tr><td>${item.provider}</td><td>${item.model}</td><td>${item.tokens}</td><td>${buildStatusPill(item.status)}</td><td>${item.error_message || "-"}</td><td>${formatDate(item.created_at)}</td></tr>`);
+            document.getElementById("recentApiWrap").innerHTML = renderSimpleTable(["Provider", "Model", "Tokens", "Status", "Details", "Time"], rows, "No recent API events yet.");
+        }
+
+        function collectDocumentRules() {
+            return Array.from(document.querySelectorAll("#documentRulesBody tr")).map((row) => {
+                const path = row.dataset.docPath;
+                const priceInput = row.querySelector(".doc-rule-price");
+                const tokenInput = row.querySelector(".doc-rule-tokens");
+                return {
+                    path,
+                    price: priceInput ? priceInput.value : "0.00",
+                    token_limit: tokenInput ? parseInt(tokenInput.value || "0", 10) : 0
+                };
+            });
+        }
+
+        function applyDocumentRules(rules) {
+            (rules || []).forEach((rule) => {
+                const row = document.querySelector(`#documentRulesBody tr[data-doc-path="${rule.path}"]`);
+                if (!row) return;
+                const priceInput = row.querySelector(".doc-rule-price");
+                const tokenInput = row.querySelector(".doc-rule-tokens");
+                if (priceInput && rule.price !== undefined) priceInput.value = rule.price;
+                if (tokenInput && rule.token_limit !== undefined) tokenInput.value = rule.token_limit;
+            });
+        }
+        function ensureChart(id, config) {
+            if (state.charts[id]) {
+                state.charts[id].data = config.data;
+                state.charts[id].options = config.options;
+                state.charts[id].update();
+                return;
+            }
+            state.charts[id] = new Chart(document.getElementById(id), config);
+        }
+
+        function renderCharts(stats) {
+            ensureChart("dailyChart", {
+                type: "line",
+                data: {
+                    labels: stats.analytics.daily.labels,
+                    datasets: [
+                        { label: "Downloads", data: stats.analytics.daily.downloads, borderColor: "#0f5bd8", backgroundColor: "rgba(15, 91, 216, 0.12)", tension: 0.32, fill: true, yAxisID: "y" },
+                        { label: "Tokens", data: stats.analytics.daily.tokens, borderColor: "#0e8f7d", backgroundColor: "rgba(14, 143, 125, 0.1)", tension: 0.32, yAxisID: "y1" },
+                        { label: "Revenue (INR)", data: stats.analytics.daily.revenue, borderColor: "#dd8a1f", backgroundColor: "rgba(221, 138, 31, 0.1)", tension: 0.32, yAxisID: "y2" }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: "index", intersect: false },
+                    scales: {
+                        y: { beginAtZero: true, position: "left" },
+                        y1: { beginAtZero: true, position: "right", grid: { drawOnChartArea: false } },
+                        y2: { beginAtZero: true, position: "right", display: false, grid: { drawOnChartArea: false } }
+                    }
+                }
+            });
+
+            ensureChart("monthlyChart", {
+                type: "bar",
+                data: {
+                    labels: stats.analytics.monthly.labels,
+                    datasets: [
+                        { label: "Downloads", data: stats.analytics.monthly.downloads, backgroundColor: "rgba(15, 91, 216, 0.82)" },
+                        { label: "Tokens", data: stats.analytics.monthly.tokens, backgroundColor: "rgba(14, 143, 125, 0.78)" },
+                        { label: "Revenue (INR)", data: stats.analytics.monthly.revenue, backgroundColor: "rgba(221, 138, 31, 0.78)" }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+            });
+
+            ensureChart("yearlyChart", {
+                type: "line",
+                data: {
+                    labels: stats.analytics.yearly.labels,
+                    datasets: [
+                        { label: "Downloads", data: stats.analytics.yearly.downloads, borderColor: "#0f5bd8", tension: 0.3 },
+                        { label: "Tokens", data: stats.analytics.yearly.tokens, borderColor: "#0e8f7d", tension: 0.3 },
+                        { label: "Revenue (INR)", data: stats.analytics.yearly.revenue, borderColor: "#dd8a1f", tension: 0.3 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+            });
+        }
+
+        function updateMetricText(id, value) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        }
+
+        function applyStats(stats) {
+            state.stats = stats;
+            updateMetricText("chipVisitors", stats.total_logged_in);
+            updateMetricText("chipDownloads", stats.total_downloads);
+            updateMetricText("chipTokens", stats.ai_usage.total_tokens_used);
+            updateMetricText("chipRevenue", formatCurrency(stats.payments.total_revenue));
+            updateMetricText("downloadsToday", stats.downloads_today);
+            updateMetricText("downloadsMonth", stats.downloads_this_month);
+            updateMetricText("downloadsYear", stats.downloads_this_year);
+            updateMetricText("tokensToday", stats.tokens_today);
+            updateMetricText("tokensMonth", stats.tokens_this_month);
+            updateMetricText("tokensYear", stats.tokens_this_year);
+            updateMetricText("revenueToday", formatCurrency(stats.revenue_today));
+            updateMetricText("revenueWeek", formatCurrency(stats.revenue_this_week));
+            updateMetricText("revenueMonth", formatCurrency(stats.revenue_this_month));
+            updateMetricText("revenueYear", formatCurrency(stats.revenue_this_year));
+            updateMetricText("paymentsSuccess", stats.payments.successful_payments);
+            updateMetricText("totalOrders", stats.payments.total_orders);
+            updateMetricText("aiTotalCalls", stats.ai_usage.total_clicks);
+            updateMetricText("aiSuccessCalls", stats.ai_usage.successful_calls);
+            updateMetricText("aiBlockedCalls", stats.ai_usage.blocked_calls);
+            updateMetricText("aiFailedCalls", stats.ai_usage.failed_calls);
+            renderTopDocs(stats);
+            renderProviderUsage(stats);
+            renderRecentPayments(stats);
+            renderRecentApi(stats);
+            renderCharts(stats);
+        }
+
+        function updatePaymentHelperText(paymentReady) {
+            updateMetricText("paymentBlockedReason", paymentReady ? "Paid downloads are active for the configured documents." : "Complete the Razorpay setup to enable paid downloads.");
+        }
+
+        function activatePanel(panelId) {
+            navButtons.forEach((button) => {
+                const isActive = button.dataset.panel === panelId;
+                button.classList.toggle("active", isActive);
+                if (isActive) {
+                    panelTitle.textContent = button.dataset.title;
+                    panelSubtitle.textContent = button.dataset.subtitle;
+                }
+            });
+
+            panelViews.forEach((panel) => {
+                panel.classList.toggle("active", panel.id === panelId);
+            });
+
+            if (panelId === "analytics") {
+                window.setTimeout(() => {
+                    Object.values(state.charts).forEach((chart) => chart.resize());
+                }, 80);
+            }
+        }
+
+        async function refreshStats(showMessage = false) {
+            try {
+                const response = await fetch("/admin/stats");
+                const stats = await response.json();
+                applyStats(stats);
+                if (showMessage) showToast("Dashboard refreshed");
+            } catch (error) {
+                showToast("Could not refresh dashboard", true);
+            }
+        }
+
+        async function postForm(url, formElement) {
+            const response = await fetch(url, { method: "POST", body: new FormData(formElement) });
+            const payload = await response.json();
+            if (!response.ok) throw new Error(payload.error || "Request failed");
+            return payload;
+        }
+
+        document.getElementById("apiSettingsForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            try {
+                const payload = await postForm("/admin/settings", event.currentTarget);
+                updateMetricText("sidebarProvider", `${providerSelect.value.toUpperCase()} / ${modelSelect.value}`);
+                showToast(payload.message || "API settings saved");
+                refreshStats();
+            } catch (error) {
+                showToast(error.message, true);
+            }
+        });
+
+        document.getElementById("paymentSettingsForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            try {
+                const payload = await postForm("/admin/settings", event.currentTarget);
+                updateMetricText("sidebarPrice", `INR ${payload.document_price}`);
+                updateMetricText("docPriceCard", `INR ${payload.document_price}`);
+                updateMetricText("paymentSetupBadge", payload.payment_ready ? "Razorpay ready" : "Awaiting setup");
+                updateMetricText("sidebarPayment", payload.payment_ready ? "Ready" : "Needs Setup");
+                updatePaymentHelperText(payload.payment_ready);
+                showToast(payload.message || "Payment settings saved");
+                refreshStats();
+            } catch (error) {
+                showToast(error.message, true);
+            }
+        });
+
+        document.getElementById("documentRulesForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            try {
+                const response = await fetch("/admin/document-rules", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ rules: collectDocumentRules() })
+                });
+                const payload = await response.json();
+                if (!response.ok) throw new Error(payload.error || "Could not save document rules");
+                applyDocumentRules(payload.document_rules);
+                showToast(payload.message || "Document rules saved");
+                refreshStats();
+            } catch (error) {
+                showToast(error.message, true);
+            }
+        });
+
+        async function toggleAiUsage(action) {
+            const formData = new FormData();
+            formData.append("action", action);
+            try {
+                const response = await fetch("/admin/ai-usage/toggle", { method: "POST", body: formData });
+                const payload = await response.json();
+                if (!response.ok) throw new Error(payload.error || "Could not update AI control");
+                showToast(payload.message);
+                window.location.reload();
+            } catch (error) {
+                showToast(error.message, true);
+            }
+        }
+
+        const stopBtn = document.getElementById("stopAiBtn");
+        const resumeBtn = document.getElementById("resumeAiBtn");
+        if (stopBtn) stopBtn.addEventListener("click", () => toggleAiUsage("stop"));
+        if (resumeBtn) resumeBtn.addEventListener("click", () => toggleAiUsage("resume"));
+
+        navButtons.forEach((button) => button.addEventListener("click", () => activatePanel(button.dataset.panel)));
+        document.getElementById("refreshBtn").addEventListener("click", () => refreshStats(true));
+        providerSelect.addEventListener("change", () => populateModelOptions(providerSelect.value, availableModels[providerSelect.value][0]));
+
+        populateModelOptions(state.settings.provider, state.settings.model);
+        applyStats(state.stats);
+        activatePanel("analytics");
+        window.setInterval(() => refreshStats(false), 60000);
+    </script>
+</body>
+</html>

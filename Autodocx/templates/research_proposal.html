@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Research Proposal Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Georgia&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- General & Layout Styles --- */
+        :root {
+            --primary-color: #004d40; /* A deep, scholarly green */
+            --secondary-color: #343a40;
+            --background-color: #f0f2f5;
+            --editor-bg: #ffffff;
+            --preview-bg: #f8f9fa;
+            --border-color: #dee2e6;
+        }
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--background-color);
+        }
+        .overleaf-container { display: flex; height: 100vh; }
+        .editor-pane, .preview-pane {
+            height: 100%; overflow-y: auto; padding: 20px; box-sizing: border-box;
+        }
+        .editor-pane { flex: 1; background-color: var(--editor-bg); border-right: 1px solid var(--border-color); }
+        .preview-pane { flex: 1.2; background-color: var(--preview-bg); }
+        .preview-controls {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;
+        }
+
+        /* --- Form Styles --- */
+        #proposalForm { max-width: 600px; margin: auto; }
+        #proposalForm h1 { color: var(--primary-color); text-align: center; }
+        #proposalForm fieldset { border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 25px; }
+        #proposalForm legend { font-size: 1.3em; font-weight: 600; color: var(--primary-color); padding: 0 10px; }
+        input[type="text"], textarea {
+            width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid var(--border-color);
+            border-radius: 5px; box-sizing: border-box; font-family: inherit; font-size: 1rem;
+        }
+        .ai-button, .download-button { padding: 10px 18px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; font-size: 1em; }
+        .ai-button { background-color: #ffc107; color: #333; display: block; width: 100%; margin-top: 10px; }
+        .download-button { background-color: #28a745; color: white; }
+
+        /* --- Theme Switch Styles --- */
+        .theme-switch-wrapper { display: flex; align-items: center; gap: 10px; }
+        .theme-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .theme-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 26px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary-color); }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        /* --- Loader Styles --- */
+        .loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .loader { border: 5px solid #f3f3f3; border-top: 5px solid var(--primary-color); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- Research Proposal PREVIEW STYLES --- */
+        /* BASE (SIMPLE) THEME */
+        #proposal-output-container {
+            max-width: 8.5in; min-height: 11in; margin: 0 auto; background: white;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1); padding: 1in; box-sizing: border-box;
+            font-family: 'Georgia', 'Times New Roman', Times, serif; color: #222; font-size: 12pt; line-height: 1.6;
+            transition: all 0.3s ease;
+        }
+        .prop-header { text-align: center; margin-bottom: 40px; }
+        .prop-header .prop-title { font-size: 1.6em; font-weight: bold; }
+        .prop-header .prop-author { font-size: 1.1em; color: #555; margin-top: 10px; }
+        .prop-body h3 { font-size: 1.2em; font-weight: bold; text-transform: uppercase; margin-top: 1.5em; margin-bottom: 0.8em; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        .prop-body p { text-align: justify; margin-bottom: 1em; }
+
+        /* MODERN THEME OVERRIDES */
+        #proposal-output-container.modern-theme {
+            font-family: 'Lato', -apple-system, sans-serif;
+            font-size: 11pt;
+        }
+        .modern-theme .prop-header {
+            text-align: left;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 15px;
+        }
+        .modern-theme .prop-header .prop-title {
+            font-size: 2em;
+            color: var(--primary-color);
+        }
+        .modern-theme .prop-body h3 {
+            text-transform: none;
+            color: var(--primary-color);
+            border-bottom-color: #eee;
+        }
+        .modern-theme .prop-body p {
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overleaf-container">
+        <!-- Editor Pane -->
+        <div class="editor-pane">
+            <form id="proposalForm">
+                <h1>Research Proposal Builder</h1>
+                <fieldset>
+                    <legend>Core Information</legend>
+                    <input type="text" id="researcherName" placeholder="Your Name / Principal Investigator">
+                    <input type="text" id="researchTitle" placeholder="Working Title of Your Research">
+                    <input type="text" id="submissionFor" placeholder="Context (e.g., PhD Application, Grant Proposal)">
+                </fieldset>
+                <fieldset>
+                    <legend>Introduction & Background</legend>
+                    <textarea id="introduction" rows="6" placeholder="Provide background context. What is the current state of research in this area? What's the broad problem?"></textarea>
+                    <textarea id="problemStatement" rows="4" placeholder="State the specific problem or gap in knowledge your research will address."></textarea>
+                </fieldset>
+                <fieldset>
+                    <legend>Aims & Methodology</legend>
+                    <textarea id="aimsObjectives" rows="5" placeholder="List the primary aims and specific, measurable objectives of your study."></textarea>
+                    <textarea id="methodology" rows="7" placeholder="Describe your research methodology. What methods, data collection techniques, and analysis procedures will you use?"></textarea>
+                </fieldset>
+                <fieldset>
+                    <legend>Outcomes & Timeline</legend>
+                    <textarea id="expectedOutcomes" rows="5" placeholder="What are the expected outcomes? What new knowledge will be generated? What is the potential impact?"></textarea>
+                    <textarea id="timeline" rows="4" placeholder="Provide a brief, phase-based timeline (e.g., Phase 1 (Months 1-3): Literature Review...)"></textarea>
+                </fieldset>
+                <fieldset>
+                    <legend>Assemble & Refine</legend>
+                    <button type="button" class="ai-button" onclick="generateProposal()">✨ Assemble Proposal Sections</button>
+                    <textarea id="proposalBody" rows="20" placeholder="The assembled proposal will appear here. The AI will generate structured text based on your notes. You can then edit it." style="margin-top: 15px;"></textarea>
+                </fieldset>
+            </form>
+        </div>
+
+        <!-- Preview Pane -->
+        <div class="preview-pane">
+            <div class="preview-controls">
+                <h2>Live Preview</h2>
+                <div class="theme-switch-wrapper">
+                    <span>Simple</span>
+                    <label class="theme-switch">
+                        <input type="checkbox" id="theme-toggle">
+                        <span class="slider"></span>
+                    </label>
+                    <span>Modern</span>
+                </div>
+                <button type="button" class="download-button" id="downloadPdfBtn">Download PDF</button>
+            </div>
+            <div id="proposal-output-container">
+                <p style="text-align: center; color: #888; margin-top: 2in;">Your Research Proposal will appear here.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loader -->
+    <div class="loader-overlay" id="loader"><div class="loader"></div></div>
+
+    <!-- Hidden styles for PDF -->
+    <style id="prop-styles-for-pdf">
+        body { font-family: 'Georgia', 'Times New Roman', Times, serif; color: #222; font-size: 12pt; line-height: 1.6; }
+        .prop-header { text-align: center; margin-bottom: 40px; }
+        .prop-header .prop-title { font-size: 1.6em; font-weight: bold; }
+        .prop-header .prop-author { font-size: 1.1em; color: #555; margin-top: 10px; }
+        .prop-body h3 { font-size: 1.2em; font-weight: bold; text-transform: uppercase; margin-top: 1.5em; margin-bottom: 0.8em; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        .prop-body p { text-align: justify; margin-bottom: 1em; }
+        .modern-theme { font-family: 'Lato', -apple-system, sans-serif; font-size: 11pt; }
+        .modern-theme .prop-header { text-align: left; border-bottom: 2px solid #004d40; padding-bottom: 15px; }
+        .modern-theme .prop-header .prop-title { font-size: 2em; color: #004d40; }
+        .modern-theme .prop-body h3 { text-transform: none; color: #004d40; border-bottom-color: #eee; }
+        .modern-theme .prop-body p { text-align: left; }
+    </style>
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="{{ url_for('static', filename='js/download-payment.js') }}"></script>
+    <script>
+        const loader = document.getElementById('loader');
+        const form = document.getElementById('proposalForm');
+        const downloadBtn = document.getElementById('downloadPdfBtn');
+        const proposalBodyTextarea = document.getElementById('proposalBody');
+        const previewContainer = document.getElementById('proposal-output-container');
+        const themeToggle = document.getElementById('theme-toggle');
+
+        async function fetchAIContent(prompt) { /* ... (same as previous) ... */ }
+
+        async function generateProposal() {
+            const data = {
+                introduction: document.getElementById('introduction').value,
+                problemStatement: document.getElementById('problemStatement').value,
+                aimsObjectives: document.getElementById('aimsObjectives').value,
+                methodology: document.getElementById('methodology').value,
+                expectedOutcomes: document.getElementById('expectedOutcomes').value,
+                timeline: document.getElementById('timeline').value,
+            };
+
+            if (!data.introduction || !data.problemStatement || !data.methodology) {
+                alert("Please fill in at least the Introduction, Problem Statement, and Methodology sections.");
+                return;
+            }
+
+            const prompt = `
+                You are an experienced academic advisor. Synthesize the user's notes into a formal research proposal.
+
+                **User's Notes:**
+                - **Introduction/Background:** ${data.introduction}
+                - **Problem Statement:** ${data.problemStatement}
+                - **Aims and Objectives:** ${data.aimsObjectives}
+                - **Methodology:** ${data.methodology}
+                - **Expected Outcomes/Impact:** ${data.expectedOutcomes}
+                - **Timeline:** ${data.timeline}
+
+                **Instructions:**
+                1.  Write in a formal, academic tone.
+                2.  Create cohesive paragraphs under each of the following section headings. Use markdown-style "##" for headings.
+                3.  The sections are: ## Introduction, ## Problem Statement, ## Aims and Objectives, ## Methodology, ## Expected Outcomes and Impact, ## Timeline.
+                4.  Expand on the user's notes to form complete sentences and paragraphs, ensuring a logical flow.
+                5.  **IMPORTANT:** Generate ONLY the content for these sections. Do not include a main title or author name in your output.
+            `;
+
+            const result = await fetchAIContent(prompt);
+            if (result) {
+                proposalBodyTextarea.value = result;
+                updatePreview();
+            }
+        }
+
+        function updatePreview() {
+            const isModern = themeToggle.checked;
+            previewContainer.classList.toggle('modern-theme', isModern);
+
+            const data = {
+                researcherName: document.getElementById('researcherName').value,
+                researchTitle: document.getElementById('researchTitle').value,
+                proposalBody: proposalBodyTextarea.value,
+            };
+
+            // Convert markdown-style headers (##) to HTML h3 tags
+            let bodyHtml = data.proposalBody
+                .replace(/^## (.*$)/gim, '<h3>$1</h3>')
+                .split('\n')
+                .filter(line => line.trim() !== '' && !line.startsWith('<h3>'))
+                .map(p => `<p>${p.trim()}</p>`)
+                .join('');
+
+            // Re-insert the h3 tags correctly
+            const headers = data.proposalBody.match(/^## (.*$)/gim) || [];
+            headers.forEach(header => {
+                const headerText = header.substring(3).trim();
+                bodyHtml = bodyHtml.replace(headerText, `<h3>${headerText}</h3>`);
+            });
+
+
+            let html = `
+                <div class="prop-header">
+                    <div class="prop-title">${data.researchTitle || 'Research Title'}</div>
+                    <div class="prop-author">By ${data.researcherName || 'Researcher Name'}</div>
+                </div>
+                <div class="prop-body">
+                    ${data.proposalBody.replace(/^## (.*$)/gim, '<h3>$1</h3>').replace(/\n(?!<h3>)/g, '<br>')}
+                </div>
+            `;
+
+            // A more robust rendering logic
+            let processedBody = data.proposalBody;
+            // First convert ## headers
+            processedBody = processedBody.replace(/^## (.*$)/gim, '<h3>$1</h3>');
+            // Then wrap remaining lines in <p> tags, avoiding wrapping the new h3 tags
+            const parts = processedBody.split(/(<h3>.*?<\/h3>)/);
+            let finalBodyHtml = "";
+            for (let i = 0; i < parts.length; i++) {
+                if (parts[i].startsWith('<h3>')) {
+                    finalBodyHtml += parts[i];
+                } else {
+                    finalBodyHtml += parts[i].split('\n').filter(p => p.trim()).map(p => `<p>${p}</p>`).join('');
+                }
+            }
+
+            html = `
+                <div class="prop-header">
+                    <div class="prop-title">${data.researchTitle || 'Research Title'}</div>
+                    <div class="prop-author">By ${data.researcherName || 'Researcher Name'}</div>
+                </div>
+                <div class="prop-body">
+                    ${finalBodyHtml || '<p>[Your proposal content will be assembled here...]</p>'}
+                </div>
+            `;
+
+
+            previewContainer.innerHTML = html;
+        }
+
+        async function downloadPDF() { /* ... (same as previous, with updated filename logic) ... */ }
+
+        // Re-pasting full functions for completeness
+        async function fetchAIContent(prompt) {
+            loader.style.display = 'flex';
+            try {
+                const response = await fetch('/generate_ai_content', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+                if (!response.ok) { const error = await response.json(); throw new Error(error.error || `HTTP error! status: ${response.status}`); }
+                const data = await response.json();
+                return data.text;
+            } catch (error) {
+                console.error("Error fetching AI content:", error);
+                alert(`AI Generation Failed: ${error.message}`);
+                return null;
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+        async function downloadPDF() {
+            const researchTitle = document.getElementById('researchTitle').value;
+            if (!researchTitle || !proposalBodyTextarea.value) {
+                alert('Please provide a title and assemble the proposal before downloading.');
+                return;
+            }
+            loader.style.display = 'flex';
+            const contentToPrint = previewContainer.innerHTML;
+            const styles = document.getElementById('prop-styles-for-pdf').innerHTML;
+            const isModern = themeToggle.checked;
+            const containerClass = isModern ? 'modern-theme' : '';
+            const fullHtmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Research Proposal</title><link href="https://fonts.googleapis.com/css2?family=Georgia&family=Lato:wght@400;700&display=swap" rel="stylesheet"><style>${styles}</style></head><body class="${containerClass}">${contentToPrint}</body></html>`;
+            try {
+                const response = await fetch('/download_pdf', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ html_content: fullHtmlContent })
+                });
+                if (!response.ok) throw new Error(`PDF generation failed: ${response.statusText}`);
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                const safeName = researchTitle.replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_');
+                a.download = `Proposal_${safeName || 'research'}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            } catch (error) {
+                console.error('Error downloading PDF:', error);
+                alert(error.message || 'Could not download PDF. See console for details.');
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        // --- Event Listeners ---
+        form.addEventListener('input', updatePreview);
+        themeToggle.addEventListener('change', updatePreview);
+        downloadBtn.addEventListener('click', downloadPDF);
+
+        // --- Initial Load ---
+        updatePreview();
+    </script>
+</body>
+</html>
+

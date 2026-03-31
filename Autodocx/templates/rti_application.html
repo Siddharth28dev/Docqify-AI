@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI RTI Application Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Georgia&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #E65100;
+            --secondary-color: #333;
+            --background-color: #f0f2f5;
+            --editor-bg: #ffffff;
+            --preview-bg: #fafafa;
+            --border-color: #d9d9d9;
+        }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: var(--background-color); }
+        .overleaf-container { display: flex; height: 100vh; }
+        .editor-pane, .preview-pane { height: 100%; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+        .editor-pane { flex: 1; background-color: var(--editor-bg); border-right: 1px solid var(--border-color); }
+        .preview-pane { flex: 1.2; background-color: var(--preview-bg); }
+        .preview-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+        #rtiForm { max-width: 600px; margin: auto; }
+        #rtiForm h1 { color: var(--primary-color); text-align: center; }
+        #rtiForm fieldset { border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 25px; }
+        #rtiForm legend { font-size: 1.3em; font-weight: 600; color: var(--primary-color); padding: 0 10px; }
+        input[type="text"], input[type="date"], select, textarea { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 5px; box-sizing: border-box; font-family: inherit; font-size: 1rem; }
+        .ai-button, .download-button { padding: 10px 18px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; font-size: 1em; }
+        .ai-button { background-color: #ffc107; color: #333; display: block; width: 100%; margin-top: 10px; }
+        .download-button { background-color: #28a745; color: white; }
+        .theme-switch-wrapper { display: flex; align-items: center; gap: 10px; }
+        .theme-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .theme-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 26px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary-color); }
+        input:checked + .slider:before { transform: translateX(24px); }
+        .loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .loader { border: 5px solid #f3f3f3; border-top: 5px solid var(--primary-color); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        #rti-output-container {
+            max-width: 8.5in; min-height: 11in; margin: 0 auto; background: white;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1); padding: 1in; box-sizing: border-box;
+            font-family: 'Georgia', 'Times New Roman', Times, serif; color: #333; font-size: 12pt; line-height: 1.6;
+            transition: all 0.3s ease;
+        }
+        .rti-header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #E65100; padding-bottom: 10px; }
+        .rti-header h2 { color: #E65100; margin: 0; }
+        .rti-header .subtitle { color: #555; font-size: 0.9em; }
+        .rti-sender-info, .rti-recipient-info { margin-bottom: 20px; line-height: 1.4; }
+        .rti-date { margin-bottom: 20px; }
+        .rti-subject { font-weight: bold; margin-bottom: 15px; }
+        .rti-body { text-align: justify; }
+        .rti-body p { margin-bottom: 1em; }
+        .rti-body ol { margin-bottom: 1em; padding-left: 20px; }
+        .rti-body ol li { margin-bottom: 0.5em; }
+        .rti-closing { margin-top: 30px; }
+        .rti-fee-note { margin-top: 20px; padding: 10px; background: #fff3e0; border-left: 3px solid #E65100; font-size: 0.9em; }
+
+        #rti-output-container.modern-theme { font-family: 'Lato', -apple-system, sans-serif; }
+        .modern-theme .rti-header { border-bottom: 3px solid #E65100; }
+        .modern-theme .rti-header h2 { font-size: 1.5em; }
+        .modern-theme .rti-body p { text-align: left; }
+    </style>
+</head>
+<body>
+    <div class="overleaf-container">
+        <div class="editor-pane">
+            <form id="rtiForm">
+                <h1>RTI Application Generator</h1>
+                <fieldset>
+                    <legend>1. Applicant Details</legend>
+                    <input type="text" id="applicantName" placeholder="Your Full Name">
+                    <input type="text" id="applicantAddress" placeholder="Your Full Address">
+                    <input type="text" id="applicantContact" placeholder="Phone / Email">
+                </fieldset>
+                <fieldset>
+                    <legend>2. Public Authority Details</legend>
+                    <input type="text" id="pioName" placeholder="Public Information Officer (PIO) Name (if known)">
+                    <input type="text" id="departmentName" placeholder="Department/Ministry Name">
+                    <input type="text" id="officeAddress" placeholder="Office Address">
+                </fieldset>
+                <fieldset>
+                    <legend>3. Information Sought</legend>
+                    <textarea id="infoSought" rows="6" placeholder="List the specific information you want. Be precise and clear. Example:&#10;1. Total funds allocated for road repair in XYZ district in 2024-25.&#10;2. Number of complaints received regarding water supply in January 2025.&#10;3. Copy of the inspection report dated..."></textarea>
+                    <textarea id="reasonContext" rows="3" placeholder="Optional: Brief context or reason for seeking this information (not legally required but can help)"></textarea>
+                    <select id="responseFormat">
+                        <option value="photocopies of documents">Photocopies of Documents</option>
+                        <option value="inspection of records">Inspection of Records</option>
+                        <option value="certified copies">Certified Copies</option>
+                        <option value="electronic format">Electronic Format (CD/Email)</option>
+                    </select>
+                </fieldset>
+                <fieldset>
+                    <legend>4. Generate & Refine</legend>
+                    <button type="button" class="ai-button" onclick="generateApplication()">✨ Generate RTI Application</button>
+                    <textarea id="applicationBody" rows="15" placeholder="The AI-generated RTI application will appear here." style="margin-top: 15px;"></textarea>
+                </fieldset>
+            </form>
+        </div>
+        <div class="preview-pane">
+            <div class="preview-controls">
+                <h2>Live Preview</h2>
+                <div class="theme-switch-wrapper">
+                    <span>Classic</span>
+                    <label class="theme-switch"><input type="checkbox" id="theme-toggle"><span class="slider"></span></label>
+                    <span>Modern</span>
+                </div>
+                <button type="button" class="download-button" id="downloadPdfBtn">Download PDF</button>
+            </div>
+            <div id="rti-output-container">
+                <p style="text-align: center; color: #888; margin-top: 2in;">Your RTI Application will appear here.</p>
+            </div>
+        </div>
+    </div>
+    <div class="loader-overlay" id="loader"><div class="loader"></div></div>
+    <style id="rti-styles-for-pdf">
+        body { font-family: 'Georgia', 'Times New Roman', Times, serif; color: #333; font-size: 12pt; line-height: 1.6; }
+        .rti-header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #E65100; padding-bottom: 10px; }
+        .rti-header h2 { color: #E65100; margin: 0; }
+        .rti-header .subtitle { color: #555; font-size: 0.9em; }
+        .rti-sender-info, .rti-recipient-info { margin-bottom: 20px; line-height: 1.4; }
+        .rti-date { margin-bottom: 20px; }
+        .rti-subject { font-weight: bold; margin-bottom: 15px; }
+        .rti-body { text-align: justify; }
+        .rti-body p { margin-bottom: 1em; }
+        .rti-body ol { margin-bottom: 1em; padding-left: 20px; }
+        .rti-body ol li { margin-bottom: 0.5em; }
+        .rti-closing { margin-top: 30px; }
+        .rti-fee-note { margin-top: 20px; padding: 10px; background: #fff3e0; border-left: 3px solid #E65100; font-size: 0.9em; }
+        .modern-theme { font-family: 'Lato', -apple-system, sans-serif; }
+    </style>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="{{ url_for('static', filename='js/download-payment.js') }}"></script>
+    <script>
+        const loader = document.getElementById('loader');
+        const form = document.getElementById('rtiForm');
+        const downloadBtn = document.getElementById('downloadPdfBtn');
+        const applicationBodyTextarea = document.getElementById('applicationBody');
+        const previewContainer = document.getElementById('rti-output-container');
+        const themeToggle = document.getElementById('theme-toggle');
+
+        async function fetchAIContent(prompt) {
+            loader.style.display = 'flex';
+            try {
+                const response = await fetch('/generate_ai_content', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) });
+                if (!response.ok) { const error = await response.json(); throw new Error(error.error || `HTTP error! status: ${response.status}`); }
+                const data = await response.json(); return data.text;
+            } catch (error) { console.error("Error:", error); alert(`AI Generation Failed: ${error.message}`); return null; }
+            finally { loader.style.display = 'none'; }
+        }
+
+        async function generateApplication() {
+            const data = {
+                applicantName: document.getElementById('applicantName').value,
+                departmentName: document.getElementById('departmentName').value,
+                infoSought: document.getElementById('infoSought').value,
+                reasonContext: document.getElementById('reasonContext').value,
+                responseFormat: document.getElementById('responseFormat').value,
+            };
+            if (!data.applicantName || !data.infoSought) {
+                alert("Please fill in your Name and the Information Sought."); return;
+            }
+            const prompt = `Write a formal RTI (Right to Information) application body under the RTI Act, 2005. Applicant: ${data.applicantName}. Department: ${data.departmentName || 'the concerned public authority'}. Information sought: ${data.infoSought}. Context: ${data.reasonContext || 'As a citizen exercising the right to information'}. Preferred format: ${data.responseFormat}. Instructions: Write a formal application body with: 1) Opening paragraph citing the RTI Act, 2005 and stating purpose. 2) A numbered list of specific information items sought (based on the input). 3) Statement about preferred format of response. 4) Statement about fee payment (Rs. 10 postal order or as applicable). 5) Request for timely response within 30 days as per the Act. Generate ONLY the application body - no addresses, date, or signature.`;
+            const result = await fetchAIContent(prompt);
+            if (result) { applicationBodyTextarea.value = result; updatePreview(); }
+        }
+
+        function updatePreview() {
+            const isModern = themeToggle.checked;
+            previewContainer.classList.toggle('modern-theme', isModern);
+            const data = {
+                applicantName: document.getElementById('applicantName').value || 'Applicant Name',
+                applicantAddress: document.getElementById('applicantAddress').value || 'Your Address',
+                applicantContact: document.getElementById('applicantContact').value || '',
+                pioName: document.getElementById('pioName').value || 'The Public Information Officer',
+                departmentName: document.getElementById('departmentName').value || 'Department Name',
+                officeAddress: document.getElementById('officeAddress').value || '',
+                applicationBody: applicationBodyTextarea.value,
+            };
+            const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            const bodyHtml = data.applicationBody.split('\n').filter(p => p.trim()).map(p => `<p>${p.trim()}</p>`).join('');
+            const contactLine = data.applicantContact ? `<div>${data.applicantContact}</div>` : '';
+            previewContainer.innerHTML = `
+                <div class="rti-header"><h2>APPLICATION UNDER RTI ACT, 2005</h2><div class="subtitle">Right to Information Act, 2005 - Section 6(1)</div></div>
+                <div class="rti-sender-info"><div><strong>From:</strong></div><div>${data.applicantName}</div><div>${data.applicantAddress}</div>${contactLine}</div>
+                <div class="rti-date"><strong>Date:</strong> ${today}</div>
+                <div class="rti-recipient-info"><div><strong>To:</strong></div><div>${data.pioName}</div><div>${data.departmentName}</div><div>${data.officeAddress}</div></div>
+                <div class="rti-subject">Subject: Application for Information under RTI Act, 2005</div>
+                <div class="rti-body"><p>Sir/Madam,</p>${bodyHtml || '<p>[Your RTI application will appear here...]</p>'}</div>
+                <div class="rti-fee-note"><strong>Note:</strong> Application fee of Rs. 10/- enclosed via Indian Postal Order / DD / Banker's Cheque (as applicable).</div>
+                <div class="rti-closing"><p>Yours faithfully,</p><br><br><p>${data.applicantName}</p></div>`;
+        }
+
+        async function downloadPDF() {
+            const name = document.getElementById('applicantName').value;
+            if (!name || !applicationBodyTextarea.value) { alert('Please provide your name and generate the application first.'); return; }
+            loader.style.display = 'flex';
+            const styles = document.getElementById('rti-styles-for-pdf').innerHTML;
+            const containerClass = themeToggle.checked ? 'modern-theme' : '';
+            const fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>RTI Application</title><link href="https://fonts.googleapis.com/css2?family=Georgia&family=Lato:wght@400;700&display=swap" rel="stylesheet"><style>${styles}</style></head><body class="${containerClass}">${previewContainer.innerHTML}</body></html>`;
+            try {
+                const response = await fetch('/download_pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ html_content: fullHtml }) });
+                if (!response.ok) throw new Error('PDF generation failed');
+                const blob = await response.blob(); const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.style.display = 'none'; a.href = url;
+                a.download = `RTI_Application_${name.replace(/[^a-z0-9]/gi, '_')}.pdf`;
+                document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); a.remove();
+            } catch (e) { console.error(e); alert(e.message || 'Could not download PDF.'); }
+            finally { loader.style.display = 'none'; }
+        }
+
+        form.addEventListener('input', updatePreview);
+        themeToggle.addEventListener('change', updatePreview);
+        downloadBtn.addEventListener('click', downloadPDF);
+        updatePreview();
+    </script>
+</body>
+</html>
+

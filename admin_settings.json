@@ -1,0 +1,11 @@
+{
+  "provider": "gemini",
+  "model": "gemini-flash-lite-latest",
+  "gemini_api_key": "",
+  "openai_api_key": "",
+  "ai_usage_enabled": true,
+  "razorpay_key_id": "",
+  "razorpay_key_secret": "",
+  "document_price": "1.00",
+  "currency": "INR"
+}

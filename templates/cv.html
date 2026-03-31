@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI CV Builder - Overleaf Style</title>
+    <style>
+        /* --- General & Layout Styles --- */
+        :root {
+            --primary-color: #005A9C;
+            --secondary-color: #333;
+            --background-color: #f0f2f5;
+            --editor-bg: #ffffff;
+            --preview-bg: #fafafa;
+            --border-color: #d9d9d9;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--background-color);
+        }
+
+        .overleaf-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .editor-pane, .preview-pane {
+            height: 100%;
+            overflow-y: auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .editor-pane {
+            flex: 1;
+            background-color: var(--editor-bg);
+            border-right: 1px solid var(--border-color);
+        }
+
+        .preview-pane {
+            flex: 1.2;
+            background-color: var(--preview-bg);
+        }
+
+        .preview-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        /* --- Form Styles --- */
+        #cvForm { max-width: 600px; margin: auto; }
+        #cvForm h1 { color: var(--primary-color); text-align: center; }
+        #cvForm fieldset { border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 25px; }
+        #cvForm legend { font-size: 1.3em; font-weight: 600; color: var(--primary-color); padding: 0 10px; }
+        input[type="text"], input[type="email"], input[type="tel"], input[type="url"], textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        .dynamic-entry { background: #f9f9f9; border: 1px solid #eee; padding: 15px; margin-top: 15px; border-radius: 5px; }
+        .ai-button, .add-button, .remove-button, .download-button, .add-skill-category-button, .add-subheading-button { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; }
+        .ai-button { background-color: #ffc107; color: #333; }
+        .add-button { background-color: #e7f3ff; color: var(--primary-color); border: 1px solid var(--primary-color); }
+        .remove-button { background-color: #fbe0e0; color: #d93025; border: 1px solid #d93025; float: right; }
+        .download-button { background-color: #28a745; color: white; font-size: 1em; }
+        .add-skill-category-button { background-color: #f0f0f0; color: var(--primary-color); border: 1px solid var(--border-color); margin-top: 10px; }
+        .add-subheading-button { background-color: #f0f0f0; color: var(--primary-color); border: 1px solid var(--border-color); margin-top: 5px; }
+
+        .loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .loader { border: 5px solid #f3f3f3; border-top: 5px solid var(--primary-color); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- CV PREVIEW STYLES (internal names unchanged for stability) --- */
+        #resume-styles { display: none; }
+        .resume-output-container { max-width: 8.5in; min-height: 11in; margin: 0 auto; background: white; box-shadow: 0 0 15px rgba(0,0,0,0.1); padding: 1in; box-sizing: border-box; font-family: 'Lato', 'Helvetica Neue', Arial, sans-serif; color: #333; }
+        .resume-header { text-align: center; margin-bottom: 30px; }
+        .resume-header h2 { font-size: 2.5em; margin: 0; font-weight: 700; color: #333; }
+        .resume-contact-info { margin-top: 10px; font-size: 0.9em; color: #555; }
+        .resume-section { margin-bottom: 20px; }
+        .resume-section-title { font-size: 1.4em; font-weight: 700; color: #000; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 15px; text-transform: uppercase; }
+        .resume-summary p { margin: 0; text-align: justify; line-height: 1.5; }
+        .resume-entry { margin-bottom: 15px; page-break-inside: avoid; }
+        .resume-entry-header { display: flex; justify-content: space-between; align-items: center; font-weight: 700; margin-bottom: 5px; }
+        .resume-entry-title { font-size: 1.1em; }
+        .resume-entry-dates { color: #555; font-style: italic; }
+        .resume-entry-details { font-weight: 700; color: #444; }
+        .resume-entry ul { list-style-type: disc; padding-left: 20px; margin: 5px 0 0 0; color: #444; }
+        .resume-entry ul li { margin-bottom: 5px; }
+        .skills-list { margin-top: 10px; line-height: 1.8; }
+        .skill-category-title { font-weight: 600; margin-bottom: 5px; }
+        .subheading-entry { margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="overleaf-container">
+        <!-- Editor Pane (Left Side) -->
+        <div class="editor-pane">
+            <form id="cvForm" oninput="updatePreview()">
+                <h1>CV Editor</h1>
+
+                <fieldset>
+                    <legend>Personal Details</legend>
+                    <input type="text" id="name" placeholder="Full Name ">
+                    <input type="email" id="email" placeholder="Email">
+                    <input type="tel" id="phone" placeholder="Phone">
+                    <input type="text" id="location" placeholder="Location (e.g., Delhi)">
+                    <input type="url" id="linkedin" placeholder="LinkedIn Profile URL">
+                </fieldset>
+
+                <fieldset>
+                    <legend>Summary</legend>
+                    <input type="text" id="targetRole" placeholder="Target Role (e.g., Postdoctoral Researcher)">
+                    <textarea id="summary" rows="4" placeholder="Write a brief summary or notes for the AI..."></textarea>
+                    <button type="button" class="ai-button" onclick="generateSummary()">✨ Generate with AI</button>
+                </fieldset>
+
+                <fieldset id="educationContainer">
+                    <legend>Education</legend>
+                    <button type="button" class="add-button" onclick="addEntry('education')">+ Add Education</button>
+                </fieldset>
+
+                <fieldset id="experienceContainer">
+                    <legend>Work/Research Experience</legend>
+                    <button type="button" class="add-button" onclick="addEntry('experience')">+ Add Experience</button>
+                </fieldset>
+
+                <fieldset id="skillsContainer">
+                    <legend>Skills</legend>
+                    <div id="skillCategories">
+                        <!-- Skill categories will be dynamically added here -->
+                    </div>
+                    <button type="button" class="add-skill-category-button" onclick="addSkillCategory()">+ Add Skill Category</button>
+                </fieldset>
+
+                <fieldset id="projectsContainer">
+                    <legend>Projects</legend>
+                    <button type="button" class="add-button" onclick="addEntry('projects')">+ Add Project</button>
+                </fieldset>
+
+                <fieldset id="customSectionsContainer">
+                    <legend>Custom Sections (e.g., Publications, Awards)</legend>
+                    <button type="button" class="add-button" onclick="addCustomSection()">+ Add Section</button>
+                </fieldset>
+
+            </form>
+        </div>
+
+        <!-- Preview Pane (Right Side) -->
+        <div class="preview-pane">
+            <div class="preview-controls">
+                <h2>Live Preview</h2>
+                <button class="download-button" id="downloadPdfBtn">Download PDF</button>
+            </div>
+            <!-- The generated CV will be displayed here -->
+            <div id="resume-output" class="resume-output-container">
+                <!-- Initial placeholder -->
+                <p style="text-align: center; color: #888; margin-top: 2in;">Your CV will appear here as you type.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loader -->
+    <div class="loader-overlay" id="loader">
+        <div class="loader"></div>
+    </div>
+
+    <!-- This style tag will be included in the PDF -->
+    <style id="resume-styles">
+        body { font-family: 'Lato', 'Helvetica Neue', Arial, sans-serif; color: #333; font-size: 11pt; line-height: 1.4; }
+        a { color: #005A9C; text-decoration: none; }
+        .resume-header { text-align: center; margin-bottom: 30px; }
+        .resume-header h2 { font-size: 2.5em; margin: 0; font-weight: 700; color: #333; }
+        .resume-contact-info { margin-top: 10px; font-size: 0.9em; color: #555; }
+        .resume-section { margin-bottom: 20px; }
+        .resume-section-title { font-size: 1.4em; font-weight: 700; color: #000; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 15px; text-transform: uppercase; }
+        .resume-summary p { margin: 0; text-align: justify; line-height: 1.5; }
+        .resume-entry { margin-bottom: 15px; page-break-inside: avoid; }
+        .resume-entry-header { display: flex; justify-content: space-between; align-items: center; font-weight: 700; margin-bottom: 5px; }
+        .resume-entry-title { font-size: 1.1em; }
+        .resume-entry-dates { color: #555; font-style: italic; }
+        .resume-entry-details { font-weight: 700; color: #444; }
+        .resume-entry ul { list-style-type: disc; padding-left: 20px; margin: 5px 0 0 0; color: #444; }
+        .resume-entry ul li { margin-bottom: 5px; }
+        .skills-list { margin-top: 10px; line-height: 1.8; }
+        .skill-category-title { font-weight: 600; margin-bottom: 5px; }
+        .subheading-entry { margin-bottom: 10px; }
+    </style>
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="{{ url_for('static', filename='js/download-payment.js') }}"></script>
+    <script>
+        // --- State and Counters ---
+        let entryCounters = { experience: 0, projects: 0, education: 0, skillCategory: 0, customSection:0, subheading: 0 };
+        const loader = document.getElementById('loader');
+
+        // --- Core AI Fetch Function ---
+        async function fetchAIContent(prompt) {
+            loader.style.display = 'flex';
+            try {
+                const response = await fetch('/generate_ai_content', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt })
+                });
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || `HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                return data.text;
+            } catch (error) {
+                console.error("Error fetching AI content:", error);
+                alert(`AI Generation Failed: ${error.message}`);
+                return null;
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        // --- AI Helper Functions ---
+        async function generateSummary() {
+            const targetRole = document.getElementById('targetRole').value;
+            let userNotes = document.getElementById('summary').value;
+
+            if (!targetRole) {
+                alert("Please enter a target role.");
+                return;
+            }
+
+            let prompt = `Write a compelling 2-3 sentence CV summary for a "${targetRole}". `;
+            if (!userNotes) {
+                userNotes = `Seeking a challenging role leveraging my skills and experience as a ${targetRole}. Committed to innovative solutions and impactful contributions.`;
+            }
+            prompt += `Key points from user: "${userNotes}". Make it professional and impactful for an academic or research-oriented CV.`;
+
+            const result = await fetchAIContent(prompt);
+            if (result) {
+                document.getElementById('summary').value = result;
+                updatePreview();
+            }
+        }
+
+        async function suggestSkills() {
+            const targetRole = document.getElementById('targetRole').value;
+            if (!targetRole) { alert("Please enter a target role."); return; }
+
+            const prompt = `List 10-15 key technical and soft skills for a "${targetRole}". Format as a simple, comma-separated list without any other text or formatting.`;
+            const result = await fetchAIContent(prompt);
+            if (result) {
+                 const skillCategories = document.querySelectorAll('.skill-category');
+                    skillCategories.forEach(category => {
+                        const skillsTextarea = category.querySelector('.skills-textarea');
+                       if (skillsTextarea) {
+                            skillsTextarea.value = skillsTextarea.value ? `${skillsTextarea.value}, ${result}` : result;
+                        }
+                    });
+                updatePreview();
+            }
+        }
+
+  async function generateDescription(button, type, sectionId, subheadingId) {
+    let parent;
+     if (type === 'custom') {
+         parent = document.getElementById(`subheading-entry-${subheadingId}`);
+    } else {
+        parent = button.closest('.dynamic-entry');
+    }
+
+    if (!parent) {
+        console.error("Could not find the parent .dynamic-entry or .subheading-entry element.");
+        return;
+    }
+
+    let descriptionTextarea;
+      if (type === 'custom') {
+          descriptionTextarea = parent.querySelector('.subheading-description');
+      } else {
+          descriptionTextarea = parent.querySelector('textarea');
+      }
+
+    if (!descriptionTextarea) {
+        alert("Could not find the description field.");
+        return;
+    }
+
+    const userDescription = descriptionTextarea.value.trim();
+    if (!userDescription) {
+        alert("Please provide a basic description first.");
+        return;
+    }
+
+    let context = '';
+    if (type === 'experience') {
+        const titleElement = parent.querySelector('.exp-title');
+        const title = titleElement ? titleElement.value.trim() : '';
+        context = title ? `For my role as ${title},` : 'For my work experience,';
+    } else if (type === 'projects') {
+        const nameElement = parent.querySelector('.proj-name');
+        const name = nameElement ? nameElement.value.trim() : '';
+        context = name ? `For my project "${name}",` : 'For my project,';
+    } else if (type === 'custom') {
+         const sectionTitle = document.getElementById(`custom-section-${sectionId}`).querySelector('.section-title')?.value;
+        const subheadingTitle = parent.querySelector('.subheading-title')?.value;
+        context = `In the "${sectionTitle}" section, under the subheading "${subheadingTitle}", `;
+    }
+
+    const prompt = `${context} here's what I did: "${userDescription}". Rewrite this into 3-4 professional bullet points for a CV. Each point should start with a strong action verb and be concise but impactful. Format as a simple list with each point on a new line.`;
+
+    const result = await fetchAIContent(prompt);
+    if (result && descriptionTextarea) {
+        descriptionTextarea.value = result;
+        updatePreview();
+    }
+}
+
+        // --- Dynamic Form Entry Functions ---
+        function addEntry(type) {
+            entryCounters[type]++;
+            const id = entryCounters[type];
+            const container = document.getElementById(`${type}Container`);
+            const addButton = container.querySelector('.add-button');
+            const entryDiv = document.createElement('div');
+            entryDiv.className = 'dynamic-entry';
+            entryDiv.id = `${type}-entry-${id}`;
+
+            let html = `<button type="button" class="remove-button" onclick="removeEntry('${type}-entry-${id}')">X</button>`;
+            if (type === 'experience') {
+                html += `<h4>Experience #${id}</h4>
+                         <input type="text" placeholder="Job Title / Role" class="exp-title">
+                         <input type="text" placeholder="Company / Institution" class="exp-company">
+                         <input type="text" placeholder="Dates (e.g., 04/2022 - Present)" class="exp-dates">
+                         <textarea rows="4" placeholder="Responsibilities and achievements..." class="exp-desc"></textarea>
+                         <button type="button" class="ai-button" onclick="generateDescription(this, 'experience')">✨ Enhance Description</button>`;
+            } else if (type === 'projects') {
+                html += `<h4>Project #${id}</h4>
+                         <input type="text" placeholder="Project Name" class="proj-name">
+                         <textarea rows="4" placeholder="Project description, your role, tech used..." class="proj-desc"></textarea>
+                         <button type="button" class="ai-button" onclick="generateDescription(this, 'projects')">✨ Enhance Description</button>`;
+            } else if (type === 'education') {
+                html += `<h4>Education #${id}</h4>
+                         <input type="text" placeholder="Degree (e.g., Doctor of Philosophy in CS)" class="edu-degree">
+                         <input type="text" placeholder="University/Institution" class="edu-school">
+                         <input type="text" placeholder="Dates (e.g., 10/2018 - 05/2022)" class="edu-dates">`;
+    }
+
+            entryDiv.innerHTML = html;
+            container.insertBefore(entryDiv, addButton);
+            updatePreview();
+        }
+
+        function removeEntry(id) {
+            document.getElementById(id).remove();
+            updatePreview();
+        }
+
+        function addCustomSection() {
+             entryCounters.customSection++;
+            const sectionId = entryCounters.customSection;
+            const container = document.getElementById('customSectionsContainer');
+            const addButton = container.querySelector('.add-button');
+            const sectionDiv = document.createElement('div');
+            sectionDiv.className = 'dynamic-entry';
+            sectionDiv.id = `custom-section-${sectionId}`;
+
+            let html = `
+                <button type="button" class="remove-button" onclick="removeEntry('custom-section-${sectionId}')">X</button>
+                <h4>Section #${sectionId}</h4>
+                <input type="text" placeholder="Section Title (e.g., Publications)" class="section-title">
+                <div id="subheadings-container-${sectionId}">
+                   <!-- Subheadings will be added here -->
+                </div>
+                <button type="button" class="add-subheading-button" onclick="addSubheading(${sectionId})">+ Add Subheading</button>
+            `;
+
+            sectionDiv.innerHTML = html;
+            container.insertBefore(sectionDiv, addButton);
+            updatePreview();
+        }
+
+        function addSubheading(sectionId) {
+            entryCounters.subheading++;
+            const subheadingId = entryCounters.subheading;
+            const container = document.getElementById(`subheadings-container-${sectionId}`);
+            const subheadingDiv = document.createElement('div');
+            subheadingDiv.className = 'subheading-entry';
+            subheadingDiv.id = `subheading-entry-${subheadingId}`;
+
+            let html = `
+                <button type="button" class="remove-button" onclick="removeEntry('subheading-entry-${subheadingId}')">X</button>
+                <input type="text" placeholder="Subheading / Item Title" class="subheading-title" style="width: 100%; margin-bottom: 5px;">
+                <textarea rows="4" placeholder="Description or details..." class="subheading-description" style="width: 100%;"></textarea>
+                <button type="button" class="ai-button" onclick="generateDescription(this, 'custom', ${sectionId}, ${subheadingId})">✨ Enhance Description</button>
+            `;
+
+            subheadingDiv.innerHTML = html;
+            container.appendChild(subheadingDiv);
+            updatePreview();
+        }
+
+        function addSkillCategory() {
+            entryCounters.skillCategory++;
+            const id = entryCounters.skillCategory;
+            const skillCategoriesContainer = document.getElementById('skillCategories');
+            const categoryDiv = document.createElement('div');
+            categoryDiv.className = 'skill-category';
+            categoryDiv.id = `skill-category-${id}`;
+
+            let html = `
+                <button type="button" class="remove-button" onclick="removeEntry('skill-category-${id}')">X</button>
+                <input type="text" placeholder="Category Title (e.g., Laboratory Techniques)" class="skill-category-title" style="width: 100%; margin-bottom: 5px;">
+                <textarea rows="2" placeholder="Skills (comma-separated)" class="skills-textarea" style="width: 100%;"></textarea>
+            `;
+
+            categoryDiv.innerHTML = html;
+            skillCategoriesContainer.appendChild(categoryDiv);
+            updatePreview();
+        }
+
+        // --- Live Preview Update Function ---
+        function updatePreview() {
+            const data = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                location: document.getElementById('location').value,
+                linkedin: document.getElementById('linkedin').value,
+                summary: document.getElementById('summary').value.replace(/\n/g, '<br>'),
+                education: [],
+                experience: [],
+                skills: [],
+                projects: [],
+                customSections: []
+            };
+
+            Array.from(document.querySelectorAll('[id^="education-entry-"]')).forEach(el => {
+                data.education.push({
+                    degree: el.querySelector('.edu-degree').value,
+                    school: el.querySelector('.edu-school').value,
+                    dates: el.querySelector('.edu-dates').value
+                });
+            });
+
+            Array.from(document.querySelectorAll('[id^="experience-entry-"]')).forEach(el => {
+                data.experience.push({
+                    title: el.querySelector('.exp-title').value,
+                    company: el.querySelector('.exp-company').value,
+                    dates: el.querySelector('.exp-dates').value,
+                    description: el.querySelector('.exp-desc').value.split('\n').filter(line => line.trim() !== '')
+                });
+            });
+
+            document.querySelectorAll('.skill-category').forEach(category => {
+                const title = category.querySelector('.skill-category-title')?.value;
+                const skills = category.querySelector('.skills-textarea')?.value.split(',').map(s => s.trim()).filter(s => s) || [];
+                if (title || skills.length > 0) {
+                    data.skills.push({ title: title || 'Skills', skills: skills });
+                }
+            });
+
+              Array.from(document.querySelectorAll('[id^="projects-entry-"]')).forEach(el => {
+                data.projects.push({
+                    name: el.querySelector('.proj-name').value,
+                    description: el.querySelector('.proj-desc').value.split('\n').filter(line => line.trim() !== '')
+                });
+            });
+
+            document.querySelectorAll('[id^="custom-section-"]').forEach(section => {
+                const sectionTitle = section.querySelector('.section-title')?.value;
+                const subheadings = [];
+                section.querySelectorAll('.subheading-entry').forEach(subheading => {
+                    const subheadingTitle = subheading.querySelector('.subheading-title')?.value;
+                    const description = subheading.querySelector('.subheading-description')?.value.split('\n').filter(line => line.trim() !== '');
+                    if (subheadingTitle || (description && description.length > 0)) {
+                       subheadings.push({ title: subheadingTitle, description: description || [] });
+                    }
+                });
+                if (sectionTitle || subheadings.length > 0) {
+                   data.customSections.push({ title: sectionTitle, subheadings: subheadings });
+                }
+            });
+
+            const contactInfo = [data.email, data.phone, data.location].filter(Boolean).join(' • ');
+            const linkedinLink = data.linkedin ? ` • <a href="${data.linkedin}" target="_blank">${data.linkedin.replace(/^(https?:\/\/)?(www\.)?/,'')}</a>` : '';
+
+            let html = `
+                <div class="resume-header">
+                    <h2>${data.name || 'Your Name'}</h2>
+                    <div class="resume-contact-info">${contactInfo}${linkedinLink}</div>
+                </div>
+                ${data.summary ? `<div class="resume-section resume-summary"><h3 class="resume-section-title">Summary</h3><p>${data.summary}</p></div>` : ''}
+                ${data.education.length > 0 ? `<div class="resume-section"><h3 class="resume-section-title">Education</h3>${data.education.map(e => `
+                    <div class="resume-entry">
+                        <div class="resume-entry-header"><span class="resume-entry-title">${e.degree}</span><span class="resume-entry-dates">${e.dates}</span></div>
+                        <div class="resume-entry-details">${e.school}</div>
+                    </div>`).join('')}</div>` : ''}
+                 ${data.experience.length > 0 ? `<div class="resume-section"><h3 class="resume-section-title">Experience</h3>${data.experience.map(e => `
+                    <div class="resume-entry">
+                        <div class="resume-entry-header"><span class="resume-entry-title">${e.title}</span><span class="resume-entry-dates">${e.dates}</span></div>
+                        <div class="resume-entry-details">${e.company}</div>
+                        <ul>${e.description.map(d => `<li>${d}</li>`).join('')}</ul>
+                    </div>`).join('')}</div>` : ''}
+                ${data.skills.length > 0 ? `<div class="resume-section"><h3 class="resume-section-title">Skills</h3>${data.skills.map(cat => `
+                    <div>
+                        <div class="skill-category-title">${cat.title || 'Skills'}</div>
+                        <div class="skills-list">${cat.skills.join(' • ')}</div>
+                    </div>`).join('')}</div>` : ''}
+                ${data.projects.length > 0 ? `<div class="resume-section"><h3 class="resume-section-title">Projects</h3>${data.projects.map(p => `
+                    <div class="resume-entry">
+                        <div class="resume-entry-header"><span class="resume-entry-title">${p.name}</span></div>
+                        <ul>${p.description.map(d => `<li>${d}</li>`).join('')}</ul>
+                    </div>`).join('')}</div>` : ''}
+               ${data.customSections.length > 0 ? `<div class="resume-section">${data.customSections.map(s => `
+                    <div class="resume-section-title">${s.title}</div>
+                    ${s.subheadings.map(sub => `
+                        <div class="resume-entry">
+                            <div class="resume-entry-details">${sub.title}</div>
+                            <ul>${sub.description.map(d => `<li>${d}</li>`).join('')}</ul>
+                        </div>
+                    `).join('')}
+                `).join('')}</div>` : ''}
+            `;
+            document.getElementById('resume-output').innerHTML = html;
+        }
+
+        // --- PDF Download Function ---
+        document.getElementById('downloadPdfBtn').addEventListener('click', async () => {
+            loader.style.display = 'flex';
+            const resumeHTML = document.getElementById('resume-output').innerHTML;
+            const styles = document.getElementById('resume-styles').innerHTML;
+
+            const fullHtmlContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>CV</title>
+                    <style>${styles}</style>
+                </head>
+                <body>
+                    <div class="resume-output-container">${resumeHTML}</div>
+                </body>
+                </html>`;
+
+            try {
+                const response = await fetch('/download_pdf', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ html_content: fullHtmlContent })
+                });
+
+                if (!response.ok) {
+                   throw new Error(`PDF generation failed: ${response.statusText}`);
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'cv.pdf';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+
+            } catch(error) {
+                console.error('Error downloading PDF:', error);
+                alert(error.message || 'Could not download PDF. See console for details.');
+            } finally {
+                loader.style.display = 'none';
+            }
+        });
+
+        // Initial preview update on load
+        updatePreview();
+    </script>
+</body>
+</html>
+

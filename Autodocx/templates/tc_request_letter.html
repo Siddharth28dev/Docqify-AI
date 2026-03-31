@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Transfer Certificate Request Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Georgia&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- General & Layout Styles --- */
+        :root {
+            --primary-color: #0056b3; /* A standard, academic blue */
+            --secondary-color: #343a40;
+            --background-color: #f0f2f5;
+            --editor-bg: #ffffff;
+            --preview-bg: #f8f9fa;
+            --border-color: #dee2e6;
+        }
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--background-color);
+        }
+        .overleaf-container { display: flex; height: 100vh; }
+        .editor-pane, .preview-pane {
+            height: 100%; overflow-y: auto; padding: 20px; box-sizing: border-box;
+        }
+        .editor-pane { flex: 1; background-color: var(--editor-bg); border-right: 1px solid var(--border-color); }
+        .preview-pane { flex: 1.2; background-color: var(--preview-bg); }
+        .preview-controls {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;
+        }
+
+        /* --- Form Styles --- */
+        #tcForm { max-width: 600px; margin: auto; }
+        #tcForm h1 { color: var(--primary-color); text-align: center; }
+        #tcForm fieldset { border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 25px; }
+        #tcForm legend { font-size: 1.3em; font-weight: 600; color: var(--primary-color); padding: 0 10px; }
+        input[type="text"], textarea {
+            width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid var(--border-color);
+            border-radius: 5px; box-sizing: border-box; font-family: inherit; font-size: 1rem;
+        }
+        .ai-button, .download-button { padding: 10px 18px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; font-size: 1em; }
+        .ai-button { background-color: #ffc107; color: #333; display: block; width: 100%; margin-top: 10px; }
+        .download-button { background-color: #28a745; color: white; }
+
+        /* --- Theme Switch Styles --- */
+        .theme-switch-wrapper { display: flex; align-items: center; gap: 10px; }
+        .theme-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .theme-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 26px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary-color); }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        /* --- Loader Styles --- */
+        .loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .loader { border: 5px solid #f3f3f3; border-top: 5px solid var(--primary-color); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- TC Request PREVIEW STYLES --- */
+        /* BASE (SIMPLE) THEME */
+        #tc-output-container {
+            max-width: 8.5in; min-height: 11in; margin: 0 auto; background: white;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1); padding: 1in; box-sizing: border-box;
+            font-family: 'Georgia', 'Times New Roman', Times, serif; color: #333; font-size: 12pt; line-height: 1.6;
+            transition: all 0.3s ease;
+        }
+        .tc-sender-info, .tc-recipient-info { margin-bottom: 30px; line-height: 1.4; }
+        .tc-date { margin-bottom: 30px; }
+        .tc-subject { font-weight: bold; margin-top: 20px; margin-bottom: 20px; }
+        .tc-body p { margin-bottom: 1.2em; text-align: justify; }
+        .tc-closing { margin-top: 30px; }
+
+        /* MODERN THEME OVERRIDES */
+        #tc-output-container.modern-theme {
+            font-family: 'Lato', -apple-system, sans-serif;
+            font-size: 11pt;
+        }
+        .modern-theme .tc-sender-info {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        .modern-theme .tc-student-name {
+            font-size: 1.4em;
+            font-weight: 700;
+            color: #343a40;
+        }
+        .modern-theme .tc-student-details {
+            color: #6c757d;
+        }
+        .modern-theme .tc-body p {
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overleaf-container">
+        <!-- Editor Pane -->
+        <div class="editor-pane">
+            <form id="tcForm">
+                <h1>Transfer Certificate Request</h1>
+                <fieldset>
+                    <legend>Your Details</legend>
+                    <input type="text" id="studentName" placeholder="Your Full Name">
+                    <input type="text" id="studentId" placeholder="Student ID / Roll Number">
+                    <input type="text" id="studentCourse" placeholder="Your Course (e.g., B.Tech in Computer Science)">
+                    <input type="text" id="studyPeriod" placeholder="Period of Study (e.g., 2021-2024)">
+                </fieldset>
+                <fieldset>
+                    <legend>College & Recipient Details</legend>
+                    <input type="text" id="currentCollegeName" placeholder="Your Current College/University Name">
+                    <input type="text" id="recipientTitle" placeholder="Recipient Title (e.g., The Principal, The Dean)">
+                </fieldset>
+                <fieldset>
+                    <legend>Reason for Transfer</legend>
+                    <input type="text" id="newCollegeName" placeholder="Name of New College/University">
+                    <input type="text" id="newCourseName" placeholder="Name of New Course/Program">
+                </fieldset>
+                <fieldset>
+                    <legend>Generate & Refine</legend>
+                    <button type="button" class="ai-button" onclick="generateLetter()">✨ Assemble Letter</button>
+                    <textarea id="letterBody" rows="15" placeholder="The assembled letter body will appear here. Review for accuracy." style="margin-top: 15px;"></textarea>
+                </fieldset>
+            </form>
+        </div>
+
+        <!-- Preview Pane -->
+        <div class="preview-pane">
+            <div class="preview-controls">
+                <h2>Live Preview</h2>
+                <div class="theme-switch-wrapper">
+                    <span>Simple</span>
+                    <label class="theme-switch">
+                        <input type="checkbox" id="theme-toggle">
+                        <span class="slider"></span>
+                    </label>
+                    <span>Modern</span>
+                </div>
+                <button type="button" class="download-button" id="downloadPdfBtn">Download PDF</button>
+            </div>
+            <div id="tc-output-container">
+                <p style="text-align: center; color: #888; margin-top: 2in;">Your request letter will appear here.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loader -->
+    <div class="loader-overlay" id="loader"><div class="loader"></div></div>
+
+    <!-- Hidden styles for PDF -->
+    <style id="tc-styles-for-pdf">
+        body { font-family: 'Georgia', 'Times New Roman', Times, serif; color: #333; font-size: 12pt; line-height: 1.6; }
+        .tc-sender-info, .tc-recipient-info { margin-bottom: 30px; line-height: 1.4; }
+        .tc-date { margin-bottom: 30px; }
+        .tc-subject { font-weight: bold; margin-top: 20px; margin-bottom: 20px; }
+        .tc-body p { margin-bottom: 1.2em; text-align: justify; }
+        .tc-closing { margin-top: 30px; }
+        .modern-theme { font-family: 'Lato', -apple-system, sans-serif; font-size: 11pt; }
+        .modern-theme .tc-sender-info { border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 25px; }
+        .modern-theme .tc-student-name { font-size: 1.4em; font-weight: 700; color: #343a40; }
+        .modern-theme .tc-student-details { color: #6c757d; }
+        .modern-theme .tc-body p { text-align: left; }
+    </style>
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="{{ url_for('static', filename='js/download-payment.js') }}"></script>
+    <script>
+        const loader = document.getElementById('loader');
+        const form = document.getElementById('tcForm');
+        const downloadBtn = document.getElementById('downloadPdfBtn');
+        const letterBodyTextarea = document.getElementById('letterBody');
+        const previewContainer = document.getElementById('tc-output-container');
+        const themeToggle = document.getElementById('theme-toggle');
+
+        async function fetchAIContent(prompt) { /* ... (same as previous) ... */ }
+
+        async function generateLetter() {
+            const data = {
+                studentName: document.getElementById('studentName').value,
+                studentId: document.getElementById('studentId').value,
+                studentCourse: document.getElementById('studentCourse').value,
+                studyPeriod: document.getElementById('studyPeriod').value,
+                newCollegeName: document.getElementById('newCollegeName').value,
+                newCourseName: document.getElementById('newCourseName').value,
+            };
+
+            if (!data.studentName || !data.studentCourse || !data.studyPeriod || !data.newCollegeName) {
+                alert("Please fill in all required fields in the 'Your Details' and 'Reason for Transfer' sections.");
+                return;
+            }
+
+            const prompt = `
+                You are a student writing a formal administrative letter. Assemble a request for a Transfer Certificate (TC).
+
+                **Data:**
+                - Student: ${data.studentName}, ID: ${data.studentId || '(not provided)'}
+                - Course of Study: ${data.studentCourse}
+                - Period of Study: ${data.studyPeriod}
+                - Reason for Transfer: Secured admission to ${data.newCollegeName} for the ${data.newCourseName} program.
+
+                **Instructions:**
+                1.  **Paragraph 1:** State the purpose directly and formally. "I am writing to formally request the issuance of my Transfer Certificate."
+                2.  **Paragraph 2:** Provide context. "I have been a bonafide student of [Course] at this institution from [Period of Study], with the student ID [ID]."
+                3.  **Paragraph 3:** State the reason clearly. "This certificate is required as I have successfully secured admission to [New College] to pursue my studies in [New Course]."
+                4.  **Paragraph 4:** Include a standard clause about finances. "I confirm that I have cleared all my pending dues with the college."
+                5.  **Closing:** A polite closing requesting action. "I would be grateful if you could process my request at your earliest convenience."
+                6.  **IMPORTANT:** Generate ONLY the letter body. Do not include salutations, subjects, dates, or signatures.
+            `;
+
+            const result = await fetchAIContent(prompt);
+            if (result) {
+                letterBodyTextarea.value = result;
+                updatePreview();
+            }
+        }
+
+        function updatePreview() {
+            const isModern = themeToggle.checked;
+            previewContainer.classList.toggle('modern-theme', isModern);
+
+            const data = {
+                studentName: document.getElementById('studentName').value,
+                studentId: document.getElementById('studentId').value,
+                studentCourse: document.getElementById('studentCourse').value,
+                currentCollegeName: document.getElementById('currentCollegeName').value,
+                recipientTitle: document.getElementById('recipientTitle').value || 'The Principal',
+                letterBody: letterBodyTextarea.value,
+            };
+
+            const today = new Date();
+            const dateString = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            const bodyWithParagraphs = data.letterBody.split('\n').filter(p => p.trim() !== '').map(p => `<p>${p.trim()}</p>`).join('');
+
+            let html = `
+                <div class="tc-sender-info">
+                    <div class="tc-student-name">${data.studentName || 'Your Name'}</div>
+                    <div class="tc-student-details">${data.studentCourse || 'Your Course'}</div>
+                    <div class="tc-student-details">Student ID: ${data.studentId || 'N/A'}</div>
+                </div>
+                <div class="tc-date">Date: ${dateString}</div>
+                <div class="tc-recipient-info">
+                    <div>To,</div>
+                    <div>${data.recipientTitle}</div>
+                    <div>${data.currentCollegeName || 'Your College Name'}</div>
+                </div>
+                <div class="tc-subject">Subject: Request for Transfer Certificate</div>
+                <div class="tc-salutation">Respected Sir/Madam,</div>
+                <div class="tc-body">${bodyWithParagraphs || '<p>[Your letter content will be assembled here...]</p>'}</div>
+                <div class="tc-closing">
+                    <p>Thank you for your assistance.</p>
+                    <p>Yours faithfully,</p><br><br>
+                    <p>${data.studentName || 'Your Name'}</p>
+                </div>
+            `;
+
+            previewContainer.innerHTML = html;
+        }
+
+        async function downloadPDF() { /* ... (same as previous, with updated filename logic) ... */ }
+
+        // Re-pasting full functions for completeness
+        async function fetchAIContent(prompt) {
+            loader.style.display = 'flex';
+            try {
+                const response = await fetch('/generate_ai_content', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+                if (!response.ok) { const error = await response.json(); throw new Error(error.error || `HTTP error! status: ${response.status}`); }
+                const data = await response.json();
+                return data.text;
+            } catch (error) {
+                console.error("Error fetching AI content:", error);
+                alert(`AI Generation Failed: ${error.message}`);
+                return null;
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+        async function downloadPDF() {
+            const studentName = document.getElementById('studentName').value;
+            if (!studentName || !letterBodyTextarea.value) {
+                alert('Please provide your name and assemble the letter before downloading.');
+                return;
+            }
+            loader.style.display = 'flex';
+            const contentToPrint = previewContainer.innerHTML;
+            const styles = document.getElementById('tc-styles-for-pdf').innerHTML;
+            const isModern = themeToggle.checked;
+            const containerClass = isModern ? 'modern-theme' : '';
+            const fullHtmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>TC Request</title><link href="https://fonts.googleapis.com/css2?family=Georgia&family=Lato:wght@400;700&display=swap" rel="stylesheet"><style>${styles}</style></head><body class="${containerClass}">${contentToPrint}</body></html>`;
+            try {
+                const response = await fetch('/download_pdf', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ html_content: fullHtmlContent })
+                });
+                if (!response.ok) throw new Error(`PDF generation failed: ${response.statusText}`);
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                const safeName = studentName.replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_');
+                a.download = `TC_Request_${safeName || 'student'}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            } catch (error) {
+                console.error('Error downloading PDF:', error);
+                alert(error.message || 'Could not download PDF. See console for details.');
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        // --- Event Listeners ---
+        form.addEventListener('input', updatePreview);
+        themeToggle.addEventListener('change', updatePreview);
+        downloadBtn.addEventListener('click', downloadPDF);
+
+        // --- Initial Load ---
+        updatePreview();
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Relieving Letter Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Georgia&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- General & Layout Styles --- */
+        :root {
+            --primary-color: #495057; /* A formal, neutral dark gray */
+            --secondary-color: #343a40;
+            --background-color: #f0f2f5;
+            --editor-bg: #ffffff;
+            --preview-bg: #f8f9fa;
+            --border-color: #dee2e6;
+        }
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--background-color);
+        }
+        .overleaf-container { display: flex; height: 100vh; }
+        .editor-pane, .preview-pane {
+            height: 100%; overflow-y: auto; padding: 20px; box-sizing: border-box;
+        }
+        .editor-pane { flex: 1; background-color: var(--editor-bg); border-right: 1px solid var(--border-color); }
+        .preview-pane { flex: 1.2; background-color: var(--preview-bg); }
+        .preview-controls {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;
+        }
+
+        /* --- Form Styles --- */
+        #relievingForm { max-width: 600px; margin: auto; }
+        #relievingForm h1 { color: var(--primary-color); text-align: center; }
+        #relievingForm fieldset { border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 25px; }
+        #relievingForm legend { font-size: 1.3em; font-weight: 600; color: var(--primary-color); padding: 0 10px; }
+        input[type="text"], input[type="date"], textarea {
+            width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid var(--border-color);
+            border-radius: 5px; box-sizing: border-box; font-family: inherit; font-size: 1rem;
+        }
+        .ai-button, .download-button { padding: 10px 18px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; font-size: 1em; }
+        .ai-button { background-color: #ffc107; color: #333; display: block; width: 100%; margin-top: 10px; }
+        .download-button { background-color: #28a745; color: white; }
+
+        /* --- Theme Switch Styles --- */
+        .theme-switch-wrapper { display: flex; align-items: center; gap: 10px; }
+        .theme-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .theme-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 26px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary-color); }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        /* --- Loader Styles --- */
+        .loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .loader { border: 5px solid #f3f3f3; border-top: 5px solid var(--primary-color); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- Relieving Letter PREVIEW STYLES --- */
+        /* BASE (SIMPLE) THEME */
+        #relieving-output-container {
+            max-width: 8.5in; min-height: 11in; margin: 0 auto; background: white;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1); padding: 1in; box-sizing: border-box;
+            font-family: 'Georgia', 'Times New Roman', Times, serif; color: #333; font-size: 12pt; line-height: 1.6;
+            transition: all 0.3s ease;
+        }
+        .rel-header { text-align: center; margin-bottom: 50px; }
+        .rel-header .company-name { font-size: 1.8em; font-weight: bold; }
+        .rel-subject { font-weight: bold; margin-top: 20px; margin-bottom: 20px; text-align: center; text-transform: uppercase; }
+        .rel-body p { margin-bottom: 1.2em; text-align: justify;}
+        .rel-signature-block { margin-top: 50px; }
+
+        /* MODERN THEME OVERRIDES */
+        #relieving-output-container.modern-theme {
+            font-family: 'Lato', -apple-system, sans-serif;
+            font-size: 11pt;
+        }
+        .modern-theme .rel-header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            text-align: left; border-bottom: 2px solid #ccc; padding-bottom: 20px;
+        }
+        .modern-theme .rel-header .logo-placeholder { font-size: 2em; font-weight: bold; color: var(--primary-color); }
+        .modern-theme .rel-header .company-address { text-align: right; font-size: 9pt; color: #6c757d; }
+        .modern-theme .rel-subject { text-align: left; }
+    </style>
+</head>
+<body>
+
+    <div class="overleaf-container">
+        <!-- Editor Pane -->
+        <div class="editor-pane">
+            <form id="relievingForm">
+                <h1>Relieving Letter Generator</h1>
+                <fieldset>
+                    <legend>Company & Issuer Details</legend>
+                    <input type="text" id="companyName" placeholder="Company Name">
+                    <input type="text" id="companyAddress" placeholder="Company Address (for Modern theme)">
+                    <input type="text" id="issuerName" placeholder="Your Name (Manager/HR)">
+                    <input type="text" id="issuerTitle" placeholder="Your Title">
+                </fieldset>
+                <fieldset>
+                    <legend>Employee & Resignation Details</legend>
+                    <input type="text" id="employeeName" placeholder="Employee's Full Name">
+                    <input type="text" id="jobTitle" placeholder="Employee's Last Held Job Title">
+                    <label for="resignationDate">Date of Resignation Submission</label>
+                    <input type="date" id="resignationDate">
+                    <label for="lastWorkingDay">Effective Last Working Day (Required)</label>
+                    <input type="date" id="lastWorkingDay">
+                </fieldset>
+                <fieldset>
+                    <legend>Optional Details</legend>
+                    <textarea id="settlementNotes" rows="3" placeholder="Notes on final settlement (e.g., 'processed and credited', 'will be processed within 45 days')."></textarea>
+                </fieldset>
+                <fieldset>
+                    <legend>Generate & Refine</legend>
+                    <button type="button" class="ai-button" onclick="generateLetter()">✨ Assemble Letter</button>
+                    <textarea id="letterBody" rows="15" placeholder="The assembled letter body will appear here. Review for factual accuracy." style="margin-top: 15px;"></textarea>
+                </fieldset>
+            </form>
+        </div>
+
+        <!-- Preview Pane -->
+        <div class="preview-pane">
+            <div class="preview-controls">
+                <h2>Live Preview</h2>
+                <div class="theme-switch-wrapper">
+                    <span>Simple</span>
+                    <label class="theme-switch">
+                        <input type="checkbox" id="theme-toggle">
+                        <span class="slider"></span>
+                    </label>
+                    <span>Modern</span>
+                </div>
+                <button type="button" class="download-button" id="downloadPdfBtn">Download PDF</button>
+            </div>
+            <div id="relieving-output-container">
+                <p style="text-align: center; color: #888; margin-top: 2in;">Your Relieving Letter will appear here.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loader -->
+    <div class="loader-overlay" id="loader"><div class="loader"></div></div>
+
+    <!-- Hidden styles for PDF -->
+    <style id="rel-styles-for-pdf">
+        body { font-family: 'Georgia', 'Times New Roman', Times, serif; color: #333; font-size: 12pt; line-height: 1.6; }
+        .rel-header { text-align: center; margin-bottom: 50px; }
+        .rel-header .company-name { font-size: 1.8em; font-weight: bold; }
+        .rel-header .company-address { font-size: 9pt; }
+        .rel-subject { font-weight: bold; margin-top: 20px; margin-bottom: 20px; text-align: center; text-transform: uppercase; }
+        .rel-body p { margin-bottom: 1.2em; text-align: justify;}
+        .rel-signature-block { margin-top: 50px; }
+        .modern-theme { font-family: 'Lato', -apple-system, sans-serif; font-size: 11pt; }
+        .modern-theme .rel-header { display: flex; justify-content: space-between; align-items: flex-start; text-align: left; border-bottom: 2px solid #ccc; padding-bottom: 20px; }
+        .modern-theme .rel-header .logo-placeholder { font-size: 2em; font-weight: bold; color: #495057; }
+        .modern-theme .rel-header .company-address { text-align: right; font-size: 9pt; color: #6c757d; }
+        .modern-theme .rel-subject { text-align: left; }
+    </style>
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="{{ url_for('static', filename='js/download-payment.js') }}"></script>
+    <script>
+        const loader = document.getElementById('loader');
+        const form = document.getElementById('relievingForm');
+        const downloadBtn = document.getElementById('downloadPdfBtn');
+        const letterBodyTextarea = document.getElementById('letterBody');
+        const previewContainer = document.getElementById('relieving-output-container');
+        const themeToggle = document.getElementById('theme-toggle');
+
+        async function fetchAIContent(prompt) { /* ... (same as previous) ... */ }
+
+        async function generateLetter() {
+            const data = {
+                employeeName: document.getElementById('employeeName').value,
+                jobTitle: document.getElementById('jobTitle').value,
+                resignationDate: document.getElementById('resignationDate').value,
+                lastWorkingDay: document.getElementById('lastWorkingDay').value,
+                settlementNotes: document.getElementById('settlementNotes').value,
+            };
+
+            if (!data.employeeName || !data.jobTitle || !data.lastWorkingDay) {
+                alert("Please fill in Employee Name, Job Title, and Last Working Day.");
+                return;
+            }
+
+            const prompt = `
+                You are a professional HR Manager. Assemble a formal and official relieving letter based on the following facts.
+
+                **Data:**
+                - Employee Name: ${data.employeeName}
+                - Last Held Position: ${data.jobTitle}
+                - Date of Resignation Submission: ${data.resignationDate}
+                - Last Working Day: ${data.lastWorkingDay}
+                - Final Settlement Notes: ${data.settlementNotes || 'All dues have been cleared as per company policy.'}
+
+                **Instructions:**
+                1.  **Opening:** Start with a formal statement referencing the employee's resignation. "This is in reference to your resignation letter dated [Resignation Date]. We would like to inform you that your resignation has been accepted."
+                2.  **Confirmation:** Clearly state that the employee is relieved from their duties. "You are hereby relieved from your duties as [Job Title] with effect from the close of business hours on [Last Working Day]."
+                3.  **Settlement:** Add a sentence about the final settlement using the notes provided.
+                4.  **Closing:** End with a simple, neutral closing statement. "We wish you all the best for your future endeavors."
+                5.  **Tone:** Strictly formal, official, and factual. Do not include emotional language or performance feedback.
+                6.  **IMPORTANT:** Generate ONLY the main body of the letter. Do not include headers, subjects, salutations, or signatures.
+            `;
+
+            const result = await fetchAIContent(prompt);
+            if (result) {
+                letterBodyTextarea.value = result;
+                updatePreview();
+            }
+        }
+
+        function updatePreview() {
+            const isModern = themeToggle.checked;
+            previewContainer.classList.toggle('modern-theme', isModern);
+
+            const data = {
+                companyName: document.getElementById('companyName').value,
+                companyAddress: document.getElementById('companyAddress').value,
+                issuerName: document.getElementById('issuerName').value || 'HR Manager',
+                issuerTitle: document.getElementById('issuerTitle').value || 'Human Resources',
+                letterBody: letterBodyTextarea.value,
+            };
+
+            const today = new Date();
+            const dateString = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            const bodyWithParagraphs = data.letterBody.split('\n').filter(p => p.trim() !== '').map(p => `<p>${p.trim()}</p>`).join('');
+
+            let html = `
+                <div class="rel-header">
+                    ${isModern ? `<div class="logo-placeholder">${data.companyName.split(' ')[0] || 'Company'}</div><div class="company-address">${data.companyAddress.replace(/\n/g, '<br>')}</div>` : `<div class="company-name">${data.companyName || 'Company Name'}</div>`}
+                </div>
+                <div class="rel-date" style="text-align: right;">Date: ${dateString}</div>
+                <div class="rel-subject">Relieving Letter</div>
+                <div class="rel-body">${bodyWithParagraphs || '<p>[Letter content will be assembled here...]</p>'}</div>
+                <div class="rel-signature-block">
+                    <p>For ${data.companyName},</p><br><br>
+                    <p>_________________________</p>
+                    <p><strong>${data.issuerName}</strong></p>
+                    <p>${data.issuerTitle}</p>
+                </div>
+            `;
+
+            previewContainer.innerHTML = html;
+        }
+
+        async function downloadPDF() { /* ... (same as previous, with updated filename logic) ... */ }
+
+        // Re-pasting full functions for completeness
+        async function fetchAIContent(prompt) {
+            loader.style.display = 'flex';
+            try {
+                const response = await fetch('/generate_ai_content', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+                if (!response.ok) { const error = await response.json(); throw new Error(error.error || `HTTP error! status: ${response.status}`); }
+                const data = await response.json();
+                return data.text;
+            } catch (error) {
+                console.error("Error fetching AI content:", error);
+                alert(`AI Generation Failed: ${error.message}`);
+                return null;
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+        async function downloadPDF() {
+            const employeeName = document.getElementById('employeeName').value;
+            if (!employeeName || !letterBodyTextarea.value) {
+                alert('Please provide the employee\'s name and assemble the letter before downloading.');
+                return;
+            }
+            loader.style.display = 'flex';
+            const contentToPrint = previewContainer.innerHTML;
+            const styles = document.getElementById('rel-styles-for-pdf').innerHTML;
+            const isModern = themeToggle.checked;
+            const containerClass = isModern ? 'modern-theme' : '';
+            const fullHtmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relieving Letter</title><link href="https://fonts.googleapis.com/css2?family=Georgia&family=Lato:wght@400;700&display=swap" rel="stylesheet"><style>${styles}</style></head><body class="${containerClass}">${contentToPrint}</body></html>`;
+            try {
+                const response = await fetch('/download_pdf', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ html_content: fullHtmlContent })
+                });
+                if (!response.ok) throw new Error(`PDF generation failed: ${response.statusText}`);
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                const safeName = employeeName.replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_');
+                a.download = `Relieving_Letter_for_${safeName || 'employee'}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            } catch (error) {
+                console.error('Error downloading PDF:', error);
+                alert(error.message || 'Could not download PDF. See console for details.');
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        // --- Event Listeners ---
+        form.addEventListener('input', updatePreview);
+        themeToggle.addEventListener('change', updatePreview);
+        downloadBtn.addEventListener('click', downloadPDF);
+
+        // --- Initial Load ---
+        updatePreview();
+    </script>
+</body>
+</html>
+

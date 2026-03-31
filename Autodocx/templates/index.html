@@ -1,0 +1,834 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocqifyAI | Smart Documents for Everyday Work</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f8f4ed;
+            --panel: #ffffff;
+            --panel-soft: #fcf9f4;
+            --line: #e7ddd0;
+            --text: #18263d;
+            --muted: #647089;
+            --brand: #0c61d7;
+            --brand-dark: #0d3f87;
+            --accent: #f28b27;
+            --teal: #0f8c7a;
+            --shadow: 0 24px 50px rgba(24, 38, 61, 0.08);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: "Manrope", sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(12, 97, 215, 0.08), transparent 25%),
+                radial-gradient(circle at top right, rgba(242, 139, 39, 0.1), transparent 22%),
+                linear-gradient(180deg, #fbf7f1 0%, #f7f1e8 100%);
+        }
+
+        a { color: inherit; text-decoration: none; }
+
+        .site-header {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            backdrop-filter: blur(14px);
+            background: rgba(251, 247, 241, 0.86);
+            border-bottom: 1px solid rgba(231, 221, 208, 0.9);
+        }
+
+        .header-inner,
+        .section-shell {
+            width: min(1200px, calc(100% - 32px));
+            margin: 0 auto;
+        }
+
+        .header-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 16px 0;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 800;
+            font-size: 1.2rem;
+            letter-spacing: -0.03em;
+        }
+
+        .brand-mark {
+            width: 32px;          /* reduced size */
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            overflow: hidden;
+            background: none;     /* remove blue background */
+            box-shadow: none;     /* remove shadow */
+        }
+        /* .logo-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        } */
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            color: var(--muted);
+            font-weight: 600;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 13px 18px;
+            border-radius: 16px;
+            font-weight: 700;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn:hover { transform: translateY(-1px); }
+        .btn-primary { color: #fff; background: linear-gradient(135deg, var(--brand), #2f7ef1); box-shadow: 0 18px 30px rgba(12, 97, 215, 0.16); }
+        .btn-secondary { background: rgba(12, 97, 215, 0.08); color: var(--brand-dark); }
+
+        .hero {
+            padding: 48px 0 26px;
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.05fr 0.95fr;
+            gap: 32px;
+            align-items: start;
+        }
+
+        .hero-copy,
+        .hero-preview,
+        .studio-panel,
+        .info-panel,
+        .cta-panel {
+            border: 1px solid rgba(231, 221, 208, 0.96);
+            border-radius: 28px;
+            box-shadow: var(--shadow);
+        }
+
+        .hero-copy {
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 241, 232, 0.98)),
+                rgba(255, 255, 255, 0.92);
+            padding: 36px;
+        }
+
+        .hero-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: rgba(15, 140, 122, 0.1);
+            color: var(--teal);
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        h1 {
+            margin: 18px 0 14px;
+            font-size: clamp(2.4rem, 4vw, 4.4rem);
+            line-height: 1.08;
+            letter-spacing: -0.05em;
+        }
+
+        .hero-copy p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 1.04rem;
+            line-height: 1.75;
+            max-width: 640px;
+        }
+
+        .hero-actions,
+        .quick-links,
+        .filter-row,
+        .info-grid,
+        .step-grid,
+        .footer-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .hero-actions {
+            margin-top: 24px;
+        }
+
+        .quick-links {
+            margin-top: 20px;
+        }
+
+        .quick-pill {
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: #fff;
+            border: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .hero-preview {
+            padding: 30px;
+            background:
+                radial-gradient(circle at top right, rgba(242, 139, 39, 0.16), transparent 28%),
+                linear-gradient(180deg, rgba(12, 97, 215, 0.09), rgba(255, 255, 255, 0.98));
+        }
+
+        .preview-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: #fff;
+            color: var(--brand-dark);
+            font-size: 0.82rem;
+            font-weight: 700;
+            border: 1px solid rgba(12, 97, 215, 0.1);
+        }
+
+        .workspace-card {
+            margin-top: 18px;
+            padding: 22px;
+            border-radius: 24px;
+            background: linear-gradient(180deg, #ffffff, #fff8ee);
+            border: 1px solid rgba(231, 221, 208, 0.92);
+        }
+
+        .workspace-top,
+        .workspace-meta,
+        .template-meta,
+        .footer-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .workspace-top strong {
+            font-size: 1.08rem;
+        }
+
+        .workspace-meta {
+            margin-top: 8px;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .preview-stack {
+            display: grid;
+            gap: 14px;
+            margin-top: 20px;
+        }
+
+        .preview-item {
+            padding: 18px;
+            border-radius: 20px;
+            background: linear-gradient(180deg, #fffaf2, #ffffff);
+            border: 1px solid var(--line);
+        }
+
+        .preview-item strong {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 1rem;
+        }
+
+        .preview-item span {
+            color: var(--muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .section { padding: 26px 0 46px; }
+
+        .studio-panel,
+        .info-panel,
+        .cta-panel {
+            padding: 34px;
+        }
+
+        .studio-panel {
+            background:
+                radial-gradient(circle at top left, rgba(12, 97, 215, 0.08), transparent 24%),
+                linear-gradient(180deg, #fffaf3, #ffffff);
+        }
+
+        .info-panel {
+            background:
+                radial-gradient(circle at top right, rgba(15, 140, 122, 0.08), transparent 24%),
+                linear-gradient(180deg, #f9fcff, #ffffff);
+        }
+
+        .cta-panel {
+            background:
+                radial-gradient(circle at top right, rgba(242, 139, 39, 0.12), transparent 28%),
+                radial-gradient(circle at bottom left, rgba(12, 97, 215, 0.1), transparent 24%),
+                linear-gradient(135deg, #fffaf4, #f6f9ff);
+        }
+
+        .section-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        .section-head h2 {
+            margin: 0;
+            font-size: clamp(1.8rem, 3vw, 2.6rem);
+            letter-spacing: -0.04em;
+        }
+
+        .section-head p,
+        .info-card p,
+        .step-card p,
+        .footer-note,
+        .template-desc {
+            margin: 6px 0 0;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 18px;
+            margin-bottom: 18px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid var(--line);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+        }
+
+        .search-box input {
+            width: 100%;
+            border: 0;
+            outline: 0;
+            font-size: 0.98rem;
+            background: transparent;
+            color: var(--text);
+            font-family: inherit;
+        }
+
+        .filter-btn {
+            padding: 12px 18px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.88);
+            color: var(--muted);
+            font-family: inherit;
+            font-size: 0.92rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .filter-btn.active {
+            color: #fff;
+            border-color: transparent;
+            background: linear-gradient(135deg, var(--brand), #2f7ef1);
+        }
+
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 22px;
+            margin-top: 20px;
+        }
+
+        .template-card {
+            display: grid;
+            gap: 14px;
+            padding: 22px;
+            min-height: 228px;
+            align-content: space-between;
+            border-radius: 22px;
+            background: linear-gradient(180deg, #ffffff, #fefbf7);
+            border: 1px solid var(--line);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .template-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 22px 36px rgba(24, 38, 61, 0.08);
+            border-color: rgba(12, 97, 215, 0.18);
+        }
+
+        .template-badge {
+            display: inline-flex;
+            align-items: center;
+            width: fit-content;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: rgba(242, 139, 39, 0.12);
+            color: #b4600f;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .template-card h3 {
+            margin: 0;
+            font-size: 1.15rem;
+            letter-spacing: -0.03em;
+        }
+
+        .template-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 13px 15px;
+            border-radius: 16px;
+            background: rgba(12, 97, 215, 0.08);
+            color: var(--brand-dark);
+            font-weight: 700;
+        }
+
+        .template-card--career {
+            background: linear-gradient(180deg, #ffffff, #f2f7ff);
+            border-color: rgba(12, 97, 215, 0.18);
+        }
+
+        .template-card--career .template-badge,
+        .template-card--career .template-action {
+            background: rgba(12, 97, 215, 0.1);
+            color: var(--brand-dark);
+        }
+
+        .template-card--education {
+            background: linear-gradient(180deg, #ffffff, #eefaf6);
+            border-color: rgba(15, 140, 122, 0.18);
+        }
+
+        .template-card--education .template-badge,
+        .template-card--education .template-action {
+            background: rgba(15, 140, 122, 0.1);
+            color: #0c6f61;
+        }
+
+        .template-card--workplace {
+            background: linear-gradient(180deg, #ffffff, #fff2e8);
+            border-color: rgba(242, 139, 39, 0.18);
+        }
+
+        .template-card--workplace .template-badge,
+        .template-card--workplace .template-action {
+            background: rgba(242, 139, 39, 0.12);
+            color: #a95d13;
+        }
+
+        .template-card--official {
+            background: linear-gradient(180deg, #ffffff, #fff8e7);
+            border-color: rgba(189, 136, 24, 0.2);
+        }
+
+        .template-card--official .template-badge,
+        .template-card--official .template-action {
+            background: rgba(189, 136, 24, 0.12);
+            color: #8b6610;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .info-card,
+        .step-card {
+            padding: 24px;
+            border-radius: 24px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(252, 248, 241, 0.94));
+            border: 1px solid rgba(231, 221, 208, 0.94);
+            box-shadow: var(--shadow);
+        }
+
+        .info-card strong,
+        .step-card strong {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 1.08rem;
+        }
+
+        .step-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .step-no {
+            width: 44px;
+            height: 44px;
+            display: grid;
+            place-items: center;
+            margin-bottom: 14px;
+            border-radius: 14px;
+            background: rgba(12, 97, 215, 0.1);
+            color: var(--brand);
+            font-weight: 800;
+        }
+
+        .cta-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 18px;
+            margin-bottom: 34px;
+        }
+
+        footer {
+            padding: 0 0 28px;
+        }
+
+        .footer-row {
+            padding-top: 18px;
+            border-top: 1px solid rgba(231, 221, 208, 0.92);
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        @media (max-width: 1080px) {
+            .hero-grid,
+            .template-grid,
+            .info-grid,
+            .step-grid,
+            .cta-panel {
+                grid-template-columns: 1fr;
+                display: grid;
+            }
+
+            .cta-panel {
+                justify-items: start;
+            }
+        }
+
+        @media (max-width: 760px) {
+            .header-inner,
+            .section-shell {
+                width: min(100% - 24px, 1200px);
+            }
+
+            .header-inner {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .nav-links {
+                gap: 12px;
+            }
+
+            .hero-copy,
+            .hero-preview,
+            .studio-panel,
+            .info-panel,
+            .cta-panel,
+            .info-card,
+            .step-card {
+                padding: 20px;
+            }
+
+            .hero-actions,
+            .header-actions,
+            .filter-row {
+                width: 100%;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .template-grid,
+            .info-grid,
+            .step-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="site-header">
+        <div class="header-inner">
+            <a class="brand" href="/">
+                <span class="brand-mark">A</span>
+                <span>DocqifyAI</span>
+            </a>
+            <nav class="nav-links">
+                <a href="#templateStudio">Templates</a>
+                <a href="#howItWorks">How It Works</a>
+                <a href="#whyChoose">Why Docqify</a>
+            </nav>
+            <div class="header-actions">
+                <a class="btn btn-secondary" href="/admin/login">Admin</a>
+                <a class="btn btn-primary" href="#templateStudio">Start Creating</a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="section-shell hero-grid">
+                <div class="hero-copy">
+                    <span class="hero-kicker">Built for fast document work</span>
+                    <h1>Create resumes, letters, SOPs, and official drafts without the clutter.</h1>
+                    <p>Docqifygives you a clean, ready-to-use workspace for career, academic, workplace, and official documents. Pick a template and start immediately, just like opening a design in Canva.</p>
+                    <div class="hero-actions">
+                        <a class="btn btn-primary" href="#templateStudio">Open Templates</a>
+                        <a class="btn btn-secondary" href="/resume">Try Resume Builder</a>
+                    </div>
+                    <div class="quick-links">
+                        <a class="quick-pill" href="/resume">Resume</a>
+                        <a class="quick-pill" href="/cl">Cover Letter</a>
+                        <a class="quick-pill" href="/sop">SOP</a>
+                        <a class="quick-pill" href="/tender_document">Tender Document</a>
+                    </div>
+                </div>
+
+                <div class="hero-preview">
+                    <span class="preview-badge">Quick Workspace</span>
+                    <div class="workspace-card">
+                        <div class="workspace-top">
+                            <strong>Start from a ready document</strong>
+                            <span class="quick-pill">AI Assisted</span>
+                        </div>
+                        <div class="workspace-meta">
+                            <span>Choose the format</span>
+                            <span>Edit, enhance, and download</span>
+                        </div>
+                        <div class="preview-stack">
+                            <div class="preview-item">
+                                <strong>Career Pack</strong>
+                                <span>Resume, CV, cover letter, joining letter, experience letter, and promotion drafts.</span>
+                            </div>
+                            <div class="preview-item">
+                                <strong>Study Abroad Pack</strong>
+                                <span>SOP, LOR, research proposal, scholarship letters, and grant application drafts.</span>
+                            </div>
+                            <div class="preview-item">
+                                <strong>Official Drafts</strong>
+                                <span>Government proposals, RTI requests, memos, contracts, grievances, and tender documents.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="templateStudio">
+            <div class="section-shell studio-panel">
+                <div class="section-head">
+                    <div>
+                        <h2>Pick a Template</h2>
+                        <p>Search or filter by use case. The working templates are available right here, without scrolling through a long marketing page.</p>
+                    </div>
+                </div>
+                <div class="search-box">
+                    <span>Search</span>
+                    <input id="templateSearch" type="text" placeholder="Type resume, SOP, tender, grievance, increment...">
+                </div>
+                <div class="filter-row" id="filterRow">
+                    <button class="filter-btn active" type="button" data-filter="all">All</button>
+                    <button class="filter-btn" type="button" data-filter="career">Career</button>
+                    <button class="filter-btn" type="button" data-filter="education">Education</button>
+                    <button class="filter-btn" type="button" data-filter="workplace">Workplace</button>
+                    <button class="filter-btn" type="button" data-filter="official">Official</button>
+                </div>
+                <div class="template-grid" id="documentGrid"></div>
+            </div>
+        </section>
+
+        <section class="section" id="whyChoose">
+            <div class="section-shell info-panel">
+                <div class="section-head">
+                    <div>
+                        <h2>Why DocqifyFeels Easier</h2>
+                        <p>A simpler interface, direct access to useful templates, and document flows that feel practical from the first click.</p>
+                    </div>
+                </div>
+                <div class="info-grid">
+                    <div class="info-card">
+                        <strong>Immediate start</strong>
+                        <p>The document picker appears early, so users can begin work instead of crossing a long landing page first.</p>
+                    </div>
+                    <div class="info-card">
+                        <strong>Comfortable design</strong>
+                        <p>Bright surfaces, clear hierarchy, and familiar cards make the experience feel professional without looking too futuristic.</p>
+                    </div>
+                    <div class="info-card">
+                        <strong>Ready for Indian users</strong>
+                        <p>Practical wording, INR-first payment flow, and common academic, HR, and official document categories all in one place.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="howItWorks">
+            <div class="section-shell">
+                <div class="section-head">
+                    <div>
+                        <h2>How It Works</h2>
+                        <p>Open a document, fill the inputs, use AI enhance where needed, and download the final version when ready.</p>
+                    </div>
+                </div>
+                <div class="step-grid">
+                    <div class="step-card">
+                        <div class="step-no">1</div>
+                        <strong>Select the document</strong>
+                        <p>Choose from career, academic, workplace, or official templates based on your need.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-no">2</div>
+                        <strong>Fill or enhance</strong>
+                        <p>Type directly or use the AI assist buttons to improve sections faster.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-no">3</div>
+                        <strong>Preview and download</strong>
+                        <p>Check the final layout, complete payment if required, and download your document instantly.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section-shell cta-panel">
+            <div>
+                <h2 style="margin: 0; font-size: clamp(1.8rem, 3vw, 2.7rem); letter-spacing: -0.04em;">Open the right document and start right away.</h2>
+                <p class="footer-note">No extra noise, no futuristic overload, just a polished document workspace that gets users moving quickly.</p>
+            </div>
+            <a class="btn btn-primary" href="#templateStudio">Browse Templates</a>
+        </section>
+    </main>
+
+    <footer>
+        <div class="section-shell footer-row">
+            <span>DocqifyAI</span>
+            <span>Professional document creation for career, study, HR, and official work.</span>
+        </div>
+    </footer>
+
+    <script>
+        const documents = [
+            { name: "Resume", path: "/resume", category: "career", badge: "Popular", desc: "ATS-style resume builder for job applications." },
+            { name: "CV", path: "/cv", category: "career", badge: "Career", desc: "Detailed academic or professional CV format." },
+            { name: "Cover Letter", path: "/cl", category: "career", badge: "Career", desc: "Role-specific cover letter drafts with cleaner structure." },
+            { name: "Joining Letter", path: "/joining_letter", category: "workplace", badge: "HR", desc: "Employee joining confirmation and acceptance letters." },
+            { name: "Resignation Letter", path: "/resignation_letter", category: "workplace", badge: "HR", desc: "Professional resignation drafts with clear notice wording." },
+            { name: "Appraisal Letter", path: "/appraisal_letter", category: "workplace", badge: "HR", desc: "Performance appraisal and feedback-style letters." },
+            { name: "Experience Letter", path: "/experience_letter", category: "workplace", badge: "HR", desc: "Past employment confirmation for employees or alumni." },
+            { name: "Promotion Letter", path: "/promotion_letter", category: "workplace", badge: "HR", desc: "Promotion and role-change confirmation drafts." },
+            { name: "Relieving Letter", path: "/relieving_letter", category: "workplace", badge: "HR", desc: "Formal employee relieving and exit confirmation." },
+            { name: "Increment Letter", path: "/increment_letter", category: "workplace", badge: "HR", desc: "Salary increment letters with clear revision language." },
+            { name: "Termination Letter", path: "/termination_letter", category: "workplace", badge: "HR", desc: "Formal termination and separation communication drafts." },
+            { name: "Employment Contract", path: "/employment_contract", category: "workplace", badge: "HR", desc: "Offer and contract-style agreements for hiring workflows." },
+            { name: "TC Request Letter", path: "/tc_request_letter", category: "education", badge: "Academic", desc: "Transfer certificate request format for schools or colleges." },
+            { name: "SOP", path: "/sop", category: "education", badge: "Study Abroad", desc: "Statement of Purpose drafts for admissions and visas." },
+            { name: "LOR", path: "/lor", category: "education", badge: "Academic", desc: "Letter of Recommendation drafts for applications." },
+            { name: "Research Proposal", path: "/research_proposal", category: "education", badge: "Research", desc: "Structured research proposal with goals and methodology." },
+            { name: "Grant Application Letter", path: "/grant_application_letter", category: "education", badge: "Research", desc: "Funding request drafts for academic or project support." },
+            { name: "Scholarship Letter", path: "/scholarship_letter", category: "education", badge: "Academic", desc: "Scholarship request letters for merit or need-based cases." },
+            { name: "Grievance Letter", path: "/grievance_letter", category: "official", badge: "Official", desc: "Complaint and grievance letters for formal escalation." },
+            { name: "RTI Application", path: "/rti_application", category: "official", badge: "Government", desc: "Right to Information application drafts in a clear format." },
+            { name: "Official Memo", path: "/official_memo", category: "official", badge: "Official", desc: "Internal memo drafts for notices and communication." },
+            { name: "Government Proposal", path: "/government_proposal", category: "official", badge: "Government", desc: "Proposal drafts for institutional or public-sector submissions." },
+            { name: "Tender Document", path: "/tender_document", category: "official", badge: "Tender", desc: "Tender drafting support for structured submissions." }
+        ];
+
+        const documentGrid = document.getElementById("documentGrid");
+        const searchInput = document.getElementById("templateSearch");
+        const filterButtons = Array.from(document.querySelectorAll(".filter-btn"));
+
+        function buildCard(item) {
+            return `
+                <a class="template-card template-card--${item.category}" href="${item.path}" data-category="${item.category}" data-name="${item.name.toLowerCase()}">
+                    <span class="template-badge">${item.badge}</span>
+                    <div>
+                        <h3>${item.name}</h3>
+                        <p class="template-desc">${item.desc}</p>
+                    </div>
+                    <span class="template-action">
+                        <span>Open Template</span>
+                        <span>></span>
+                    </span>
+                </a>
+            `;
+        }
+
+        function getActiveFilter() {
+            const active = filterButtons.find((button) => button.classList.contains("active"));
+            return active ? active.dataset.filter : "all";
+        }
+
+        function renderDocuments() {
+            const searchTerm = searchInput.value.trim().toLowerCase();
+            const activeFilter = getActiveFilter();
+            const filtered = documents.filter((item) => {
+                const matchesFilter = activeFilter === "all" || item.category === activeFilter;
+                const haystack = `${item.name} ${item.desc} ${item.badge}`.toLowerCase();
+                const matchesSearch = !searchTerm || haystack.includes(searchTerm);
+                return matchesFilter && matchesSearch;
+            });
+
+            if (!filtered.length) {
+                documentGrid.innerHTML = `
+                    <div class="template-card" style="grid-column: 1 / -1;">
+                        <span class="template-badge">No Match</span>
+                        <div>
+                            <h3>No template found</h3>
+                            <p class="template-desc">Try another keyword or switch the category filter.</p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            documentGrid.innerHTML = filtered.map(buildCard).join("");
+        }
+
+        filterButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                filterButtons.forEach((item) => item.classList.remove("active"));
+                button.classList.add("active");
+                renderDocuments();
+            });
+        });
+
+        searchInput.addEventListener("input", renderDocuments);
+        renderDocuments();
+    </script>
+</body>
+</html>
