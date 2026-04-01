@@ -18,7 +18,7 @@ import traceback
 import os
 import uuid
 from datetime import datetime, timedelta
-
+import os
 
 # --- App Configuration ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -1557,7 +1557,9 @@ def admin_settings():
         settings["gemini_api_key"] = gemini_api_key
     if openai_api_key:
         settings["openai_api_key"] = openai_api_key
-
+    
+    # razorpay_key_id = os.getenv("RAZORPAY_KEY_ID") or request.form.get("razorpay_key_id", "").strip()
+    # razorpay_key_secret = os.getenv("RAZORPAY_KEY_SECRET") or request.form.get("razorpay_key_secret", "").strip()
     settings["razorpay_key_id"] = razorpay_key_id
     settings["razorpay_key_secret"] = razorpay_key_secret
     parsed_price = parse_decimal_price(document_price)
@@ -1651,8 +1653,13 @@ def admin_document_rules():
 init_db()
 
 
-import os
+# import os
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(debug=False, use_reloader=False, host="0.0.0.0", port=port)
+
+# import os
+
+# razorpay_key_id = os.getenv("RAZORPAY_KEY_ID")
+# razorpay_key_secret = os.getenv("RAZORPAY_KEY_SECRET")
