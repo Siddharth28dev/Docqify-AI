@@ -1,6 +1,5 @@
 # from google import genai
 import google.generativeai as genai
-# from google.genai import types
 from flask import Flask, render_template, request, jsonify, send_file, session, redirect, url_for, has_request_context
 from functools import wraps
 from urllib.parse import urlparse
@@ -1072,18 +1071,19 @@ def admin_required(func):
 def generate_with_gemini(prompt, model, api_key, max_output_tokens=None):
     if not api_key:
         raise ValueError("Gemini API key is not configured")
-    client = genai.Client(api_key=api_key)
-    config_kwargs = {"temperature": 0.7}
-    if max_output_tokens and max_output_tokens > 0:
-        config_kwargs["max_output_tokens"] = max_output_tokens
-    response = client.models.generate_content(
-        model=model,
-        contents=prompt,
-        config=types.GenerateContentConfig(**config_kwargs)
-    )
+
+    import google.generativeai as genai
+    genai.configure(api_key=api_key)
+
+    model_obj = genai.GenerativeModel(model)
+
+    response = model_obj.generate_content(prompt)
+
     if not response.text:
         raise ValueError("Model returned empty response")
+
     usage = extract_gemini_usage(response=response, prompt=prompt, text=response.text)
+
     return {
         "text": response.text,
         **usage

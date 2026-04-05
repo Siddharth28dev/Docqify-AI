@@ -1,7 +1,7 @@
 {
   "provider": "gemini",
   "model": "gemini-flash-lite-latest",
-  "gemini_api_key": "",
+  "gemini_api_key": "AIzaSyDHB1PanYYDnZBWnZeF_raegr4J3W3fPYM",
   "openai_api_key": "",
   "ai_usage_enabled": true,
   "razorpay_key_id": "rzp_live_SUxWtn18MnOvpf",

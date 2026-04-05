@@ -1,5 +1,7 @@
+
 from google import genai
 from flask import Flask, render_template, request, jsonify, send_file
+import google.generativeai as genai
 import io
 import pdfkit
 import traceback
@@ -8,7 +10,7 @@ import os
 
 # --- Configuration ---
 API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
-client = genai.Client(api_key=API_KEY) if API_KEY else None
+# client = genai.Client(api_key=API_KEY) if API_KEY else None
 MODEL_NAME = "gemini-flash-lite-latest"
 
 app = Flask(__name__)
